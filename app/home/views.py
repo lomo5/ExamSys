@@ -1,4 +1,4 @@
-from . import home
+from . import home  # 导入blueprint
 
 
 @home.route('/')

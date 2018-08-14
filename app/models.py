@@ -1,22 +1,22 @@
 # coding:utf-8
 
-import datetime
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
 
-app = Flask(__name__)
+from flask import Flask
+from werkzeug.security import generate_password_hash, check_password_hash
+from . import db
+
+app = Flask(__name__)  # 实例化app对象
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:root@127.0.0.1:8889/examsys"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 # app.config["SQLALCHEMY_COMMIT_ON_TEARDOWN"] = True  # 设置为True表示每次请求结束都会自动提交数据库的变动
-
-db = SQLAlchemy(app)
 
 
 class Role(db.Model):
     """用户角色：admins，表示管理员。user，表示普通用户"""
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
-    rolename = db.Column(db.String, nullable=False)
+    role_name = db.Column(db.String, nullable=False)
     # 关系、外键：
     users = db.relationship('User', backref='role', lazy='dynamic', cascade='all, delete-orphan')
 
@@ -26,16 +26,17 @@ class UserLog(db.Model):
     __tablename__ = 'userlogs'
     id = db.Column(db.Integer, primary_key=True)
     ip = db.Column(db.String, nullable=True)  # 登录ip
-    logintime = db.Column(db.DateTime, default=datetime.datetime.utcnow(), nullable=False)  # 登陆时间
+    # 注意，datetime.utcnow后面没有()，因为db.Column()的default参数可以接受函数作为默认值，所以每次需要生成默认值时，db.Column()都会调用指定的函数。
+    login_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)  # 登陆时间
     # 关系、外键：
-    userid = db.Column(db.Integer, db.ForeignKey('users.id'))  # 用户id
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 用户id
 
 
 class Subject(db.Model):
     """科目"""
     __tablename__ = 'subjects'
     id = db.Column(db.Integer, primary_key=True)
-    sujectname = db.Column(db.String(100), unique=True, nullable=False)
+    subject_name = db.Column(db.String(100), unique=True, nullable=False)
     # 关系、外键：
     questions = db.relationship('Question', backref='subject', lazy='dynamic',
                                 cascade='all, delete-orphan')  # 关系：多对一/试题
@@ -47,25 +48,45 @@ class User(db.Model):
     """用户数据模型"""
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    staffnumber = db.Column(db.String(255), index=True, unique=True, nullable=False)  # 工号
+    staff_number = db.Column(db.String(255), index=True, unique=True, nullable=False)  # 工号
     username = db.Column(db.String(100), unique=True, index=True, nullable=False)  # 唯一
-    password = db.Column(db.String(100), nullable=False)  # 密码
+    password_hash = db.Column(db.String(100), nullable=False)  # 密码
     email = db.Column(db.String(100), nullable=True)
-    mobilephone = db.Column(db.String(11), nullable=True)  # 手机号
-    faceurl = db.Column(db.String(255), nullable=True)  # 头像网址
+    mobile_phone = db.Column(db.String(11), nullable=True)  # 手机号
+    face_url = db.Column(db.String(255), nullable=True)  # 头像网址
     info = db.Column(db.Text, nullable=True)  # 信息
-    addtime = db.Column(db.DateTime, index=True, default=datetime.datetime.utcnow(),
-                        nullable=False)  # 注册时间；index=True表示为该列建索引；
+    add_time = db.Column(db.DateTime, index=True, default=datetime.utcnow,
+                         nullable=False)  # 注册时间；index=True表示为该列建索引；
+    last_time = db.Column(db.DateTime(), default=datetime.utcnow)  # 上次登陆时间
     # 关系、外键：
-    roleid = db.Column(db.Integer, db.ForeignKey('roles.id'))  # 角色ID
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))  # 角色ID
     # db.relationship给User添加了userlogs属性
     # db.relationship的第一个参数表示这个关系的另一端是哪个模型。backref参数为UserLog模型添加了一个user属性
     # db.relationship一般放在"一对多"关系的"一"这一边
-    userlogs = db.relationship('UserLog', backref='user', lazy='dynamic',
-                               cascade='all, delete-orphan')  # 关系：一对多/该用户的登录日志
-    createdpapers = db.relationship('Paper', backref='createuser', lazy='dynamic')  # 关系：一对多/该用户创建的试卷
+    user_logs = db.relationship('UserLog', backref='user', lazy='dynamic',
+                                cascade='all, delete-orphan')  # 关系：一对多/该用户的登录日志
+    created_papers = db.relationship('Paper', backref='create_user', lazy='dynamic')  # 关系：一对多/该用户创建的试卷
     scores = db.relationship('Score', backref='user', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/成绩
     mistakes = db.relationship('Mistake', backref='user', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/错题
+
+    # 计算密码散列值的函数通过名为 password 的只写属性实现。设定这个属性的值时，赋值方法会调用 Werkzeug 提供的 generate_password_hash() 函数
+    # ，并把得到的结果赋值给password_hash 字段。如果试图读取 password 属性的值，则会返回错误。
+    @property
+    def password(self):
+        raise AttributeError('密码是不可读属性！')
+
+    @password.setter
+    def password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    # 验证密码的函数，如果返回True表示密码正确。
+    def verify_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    # 刷新用户的最后访问时间
+    def ping(self):
+        self.last_time = datetime.utcnow()
+        db.session.add(self)
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -75,9 +96,9 @@ class QuestionType(db.Model):
     """题型"""
     __tablename__ = 'questiontypes'
     id = db.Column(db.Integer, primary_key=True)
-    typename = db.Column(db.String(100), nullable=False, unique=True)  # 题型：单选、多选、不定项选择题、判断题、填空题（有序填空/无序填空）、简答
+    type_name = db.Column(db.String(100), nullable=False, unique=True)  # 题型：单选、多选、不定项选择题、判断题、填空题（有序填空/无序填空）、简答
     # 关系、外键：
-    questions = db.relationship('Question', backref='qtype', lazy='dynamic')  # 关系：一对多/试题
+    questions = db.relationship('Question', backref='question_type', lazy='dynamic')  # 关系：一对多/试题
 
 
 class Question(db.Model):
@@ -97,27 +118,28 @@ class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     question = db.Column(db.Text, nullable=False)  # 题干
     answer = db.Column(db.Text, nullable=False)  # 答案
-    picurl = db.Column(db.Text, nullable=True)  # 关联图片链接
-    addtime = db.Column(db.DateTime, default=datetime.datetime.utcnow())  # 添加时间
+    pic_url = db.Column(db.Text, nullable=True)  # 关联图片链接
+    add_time = db.Column(db.DateTime, default=datetime.utcnow)  # 添加时间
     # 关系、外键：
-    qtypeid = db.Column(db.Integer, db.ForeignKey('questiontypes.id'))  # 外键：题型
-    subjectid = db.Column(db.Integer, db.ForeignKey('subjects.id'))  # 外键：科目
+    qtype_id = db.Column(db.Integer, db.ForeignKey('questiontypes.id'))  # 外键：题型
+    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'))  # 外键：科目
     mistakes = db.relationship('Mistake', backref='question', lazy='dynamic')  # 关系：一对多/错题
 
 
-# 试卷、试题关联表。在多对多关系中，用来关联paper表和question表的helper表
-paperquestion = db.Table('paperquestion', db.Column('paperid', db.Integer, db.ForeignKey('papres.id')),
-                         db.Column('questionid', db.Integer, db.ForeignKey('questions.id')))
+# 试卷、试题关联表。在多对多关系中，用来关联paper表和question表的helper表，我们不需要关心这张表，因为这张表将会由SQLAlchemy接管，
+# 它唯一的作用是作为papers表和questions表关联表，所以必须在db.relationship()中指出sencondary关联表参数。
+paperquestion = db.Table('paperquestion', db.Column('paper_id', db.Integer, db.ForeignKey('papers.id')),
+                         db.Column('question_id', db.Integer, db.ForeignKey('questions.id')))
 
 
 class Paper(db.Model):
     """试卷"""
     __tablename__ = 'papers'
     id = db.Column(db.Integer, primary_key=True)
-    addtime = db.Column(db.DateTime, default=datetime.datetime.utcnow())  # 添加时间
+    add_time = db.Column(db.DateTime, default=datetime.utcnow)  # 添加时间
     # 关系、外键：
-    createuserid = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # 外键：创建用户id
-    subjectid = db.Column(db.Integer, db.ForeignKey('subjects.id'))  # 外键：科目
+    create_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # 外键：创建用户id
+    subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'))  # 外键：科目
     scores = db.relationship('Score', backref='paper', lazy='dynamic', cascade='all, delete-orphan')  # 关系：多对一/成绩
     '''
     paperquestion表由db.Table声明，我们不需要关心这张表，因为这张表将会由SQLAlchemy接管，
@@ -137,11 +159,11 @@ class Score(db.Model):
     __tablename__ = 'scores'
     id = db.Column(db.Integer, primary_key=True)
     score = db.Column(db.Integer, nullable=False)  # 成绩
-    begintime = db.Column(db.DateTime, default=datetime.datetime.utcnow(), nullable=True)  # 开始考试时间
-    endtime = db.Column(db.DateTime, default=datetime.datetime.utcnow(), nullable=True)  # 结束考试时间
+    begin_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)  # 开始考试时间
+    end_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)  # 结束考试时间
     # 关系、外键：
-    paperid = db.Column(db.Integer, db.ForeignKey('papers.id'))  # 外键：试卷id
-    userid = db.Column(db.Integer, db.ForeignKey('users.id'))  # 外键：用户id
+    paper_id = db.Column(db.Integer, db.ForeignKey('papers.id'))  # 外键：试卷id
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 外键：用户id
 
 
 class Mistake(db.Model):
@@ -150,6 +172,6 @@ class Mistake(db.Model):
     """
     __tablename__ = 'mistakes'
     id = db.Column(db.Integer, primary_key=True)
-    userid = db.Column(db.Integer, db.ForeignKey('users.id'))  # 外键：用户id
-    paperid = db.Column(db.Integer, db.ForeignKey('papers.id'))  # 外键：试卷id
-    questionid = db.Column(db.Integer, db.ForeignKey('questions.id'))  # 外键：试题id
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 外键：用户id
+    paper_id = db.Column(db.Integer, db.ForeignKey('papers.id'))  # 外键：试卷id
+    question_id = db.Column(db.Integer, db.ForeignKey('questions.id'))  # 外键：试题id

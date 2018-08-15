@@ -2,34 +2,39 @@
 
 from datetime import datetime
 
-from flask import Flask
+from flask import current_app
 from werkzeug.security import generate_password_hash, check_password_hash
-from . import db
+from flask_login import UserMixin
+from . import db, login_manager
 
-app = Flask(__name__)  # 实例化app对象
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:root@127.0.0.1:8889/examsys"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
-# app.config["SQLALCHEMY_COMMIT_ON_TEARDOWN"] = True  # 设置为True表示每次请求结束都会自动提交数据库的变动
+
+# app = Flask(__name__)  # 实例化app对象
+# app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://root:root@127.0.0.1:8889/examsys"
+# app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
+# # app.config["SQLALCHEMY_COMMIT_ON_TEARDOWN"] = True  # 设置为True表示每次请求结束都会自动提交数据库的变动
 
 
 class Role(db.Model):
     """用户角色：admins，表示管理员。user，表示普通用户"""
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
-    role_name = db.Column(db.String, nullable=False)
+    role_name = db.Column(db.String(100), nullable=False)
     # 关系、外键：
     users = db.relationship('User', backref='role', lazy='dynamic', cascade='all, delete-orphan')
 
+    def __repr__(self):
+        return '<Role %r>' % self.name
 
-class UserLog(db.Model):
-    """用户登录日志条目"""
-    __tablename__ = 'userlogs'
-    id = db.Column(db.Integer, primary_key=True)
-    ip = db.Column(db.String, nullable=True)  # 登录ip
-    # 注意，datetime.utcnow后面没有()，因为db.Column()的default参数可以接受函数作为默认值，所以每次需要生成默认值时，db.Column()都会调用指定的函数。
-    login_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)  # 登陆时间
-    # 关系、外键：
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 用户id
+#
+# class UserLog(db.Model):
+#     """用户登录日志条目"""
+#     __tablename__ = 'userlogs'
+#     id = db.Column(db.Integer, primary_key=True)
+#     ip = db.Column(db.String, nullable=True)  # 登录ip
+#     # 注意，datetime.utcnow后面没有()，因为db.Column()的default参数可以接受函数作为默认值，所以每次需要生成默认值时，db.Column()都会调用指定的函数。
+#     login_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)  # 登陆时间
+#     # 关系、外键：
+#     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 用户id
 
 
 class Subject(db.Model):
@@ -42,9 +47,12 @@ class Subject(db.Model):
                                 cascade='all, delete-orphan')  # 关系：多对一/试题
     papers = db.relationship('Paper', backref='subject', lazy='dynamic', cascade='all, delete-orphan')  # 关系：多对一/试卷
 
+    def __repr__(self):
+        return '<Subject %r>' % self.name
+
 
 # 用户数据模型
-class User(db.Model):
+class User(UserMixin, db.Model):
     """用户数据模型"""
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -63,8 +71,7 @@ class User(db.Model):
     # db.relationship给User添加了userlogs属性
     # db.relationship的第一个参数表示这个关系的另一端是哪个模型。backref参数为UserLog模型添加了一个user属性
     # db.relationship一般放在"一对多"关系的"一"这一边
-    user_logs = db.relationship('UserLog', backref='user', lazy='dynamic',
-                                cascade='all, delete-orphan')  # 关系：一对多/该用户的登录日志
+    # user_logs = db.relationship('UserLog', backref='user', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/该用户的登录日志
     created_papers = db.relationship('Paper', backref='create_user', lazy='dynamic')  # 关系：一对多/该用户创建的试卷
     scores = db.relationship('Score', backref='user', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/成绩
     mistakes = db.relationship('Mistake', backref='user', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/错题
@@ -89,7 +96,12 @@ class User(db.Model):
         db.session.add(self)
 
     def __repr__(self):
-        return '<User %r>' % self.username
+        return '<User %r>' % self.name
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 
 class QuestionType(db.Model):
@@ -99,6 +111,9 @@ class QuestionType(db.Model):
     type_name = db.Column(db.String(100), nullable=False, unique=True)  # 题型：单选、多选、不定项选择题、判断题、填空题（有序填空/无序填空）、简答
     # 关系、外键：
     questions = db.relationship('Question', backref='question_type', lazy='dynamic')  # 关系：一对多/试题
+
+    def __repr__(self):
+        return '<QuestionType %r>' % self.name
 
 
 class Question(db.Model):
@@ -124,6 +139,9 @@ class Question(db.Model):
     qtype_id = db.Column(db.Integer, db.ForeignKey('questiontypes.id'))  # 外键：题型
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'))  # 外键：科目
     mistakes = db.relationship('Mistake', backref='question', lazy='dynamic')  # 关系：一对多/错题
+
+    def __repr__(self):
+        return '<Question %r>' % self.name
 
 
 # 试卷、试题关联表。在多对多关系中，用来关联paper表和question表的helper表，我们不需要关心这张表，因为这张表将会由SQLAlchemy接管，
@@ -153,6 +171,9 @@ class Paper(db.Model):
                                 )
     mistakes = db.relationship('Mistake', backref='paper', lazy='dynamic')
 
+    def __repr__(self):
+        return '<Paper %r>' % self.name
+
 
 class Score(db.Model):
     """成绩"""
@@ -165,6 +186,9 @@ class Score(db.Model):
     paper_id = db.Column(db.Integer, db.ForeignKey('papers.id'))  # 外键：试卷id
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 外键：用户id
 
+    def __repr__(self):
+        return '<Score %r>' % self.name
+
 
 class Mistake(db.Model):
     """错题
@@ -175,3 +199,6 @@ class Mistake(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 外键：用户id
     paper_id = db.Column(db.Integer, db.ForeignKey('papers.id'))  # 外键：试卷id
     question_id = db.Column(db.Integer, db.ForeignKey('questions.id'))  # 外键：试题id
+
+    def __repr__(self):
+        return '<Mistake %r>' % self.name

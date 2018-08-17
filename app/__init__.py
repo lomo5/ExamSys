@@ -28,10 +28,10 @@ def create_app(config_name):
     db.init_app(app)
     login_manager.init_app(app)
 
-    from .home import home as home_blueprint
+    from app.home import home as home_blueprint
     app.register_blueprint(home_blueprint)
 
-    from .auth import auth as auth_blueprint
+    from app.auth import auth as auth_blueprint
     app.register_blueprint(auth_blueprint, url_prefix='/auth')
 
     from app.admin import admin as admin_blueprint
@@ -39,5 +39,3 @@ def create_app(config_name):
     app.register_blueprint(admin_blueprint, url_prefix='/admin')
 
     return app
-
-

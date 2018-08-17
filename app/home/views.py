@@ -1,6 +1,7 @@
+from flask import render_template, redirect, request, url_for, flash
 from . import home  # 导入blueprint
 
 
-@home.route('/')
+@home.route('/', methods=['GET', 'POST'])
 def index():
-    return '<h1 style="color:green">Hello world!<h1>'
+    return render_template('home/index.html')

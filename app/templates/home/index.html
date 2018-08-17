@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}电力调考平台{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Hello</h1>
+    <h1><img src="{{ url_for('static', filename='test.jpeg') }}"></h1>
+
+</div>
+{#{{ wtf.quick_form(form) }}#}
+{% endblock %}

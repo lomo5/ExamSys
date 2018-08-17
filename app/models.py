@@ -1,7 +1,6 @@
 # coding:utf-8
 
 from datetime import datetime
-
 from flask import current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
@@ -25,16 +24,23 @@ class Role(db.Model):
     def __repr__(self):
         return '<Role %r>' % self.name
 
-#
-# class UserLog(db.Model):
-#     """用户登录日志条目"""
-#     __tablename__ = 'userlogs'
-#     id = db.Column(db.Integer, primary_key=True)
-#     ip = db.Column(db.String, nullable=True)  # 登录ip
-#     # 注意，datetime.utcnow后面没有()，因为db.Column()的default参数可以接受函数作为默认值，所以每次需要生成默认值时，db.Column()都会调用指定的函数。
-#     login_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)  # 登陆时间
-#     # 关系、外键：
-#     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 用户id
+
+class Department(db.Model):
+    """用户所在部门"""
+    __tablename__='departments'
+    id=db.Column(db.Integer, primary_key=True)
+    department_name=db.Column(db.String(100), nullable=False)
+    # 关系、外键：
+    users = db.relationship('User', backref='department', lazy='dynamic')
+
+    def __repr__(self):
+        return '<Department %r>' % self.name
+
+
+# # department和subject表的多对多关系中间表。说明：为了简化目前的需求，暂时不关联科目表。
+# departmentsubject = db.Table('departmentsubject',
+#                              db.Column('department_id', db.Integer, db.ForeignKey('departments.id')),
+#                              db.Column('subject_id', db.Integer, db.ForeignKey('subjects.id')))
 
 
 class Subject(db.Model):
@@ -46,9 +52,27 @@ class Subject(db.Model):
     questions = db.relationship('Question', backref='subject', lazy='dynamic',
                                 cascade='all, delete-orphan')  # 关系：多对一/试题
     papers = db.relationship('Paper', backref='subject', lazy='dynamic', cascade='all, delete-orphan')  # 关系：多对一/试卷
+    # # 为了简化目前的需求，暂时不关联部门表：
+    # departments = db.relationship('Department',
+    #                               secondary=departmentsubject,
+    #                               backref=db.backref('subjects', lazy='dynamic'),
+    #                               lazy='dynamic'
+    #                               )
 
     def __repr__(self):
         return '<Subject %r>' % self.name
+
+
+#
+# class UserLog(db.Model):
+#     """用户登录日志条目"""
+#     __tablename__ = 'userlogs'
+#     id = db.Column(db.Integer, primary_key=True)
+#     ip = db.Column(db.String, nullable=True)  # 登录ip
+#     # 注意，datetime.utcnow后面没有()，因为db.Column()的default参数可以接受函数作为默认值，所以每次需要生成默认值时，db.Column()都会调用指定的函数。
+#     login_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)  # 登陆时间
+#     # 关系、外键：
+#     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 用户id
 
 
 # 用户数据模型
@@ -68,6 +92,7 @@ class User(UserMixin, db.Model):
     last_time = db.Column(db.DateTime(), default=datetime.utcnow)  # 上次登陆时间
     # 关系、外键：
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))  # 角色ID
+    department_id=db.Column(db.Integer, db.ForeignKey('departments.id'))  # 部门id
     # db.relationship给User添加了userlogs属性
     # db.relationship的第一个参数表示这个关系的另一端是哪个模型。backref参数为UserLog模型添加了一个user属性
     # db.relationship一般放在"一对多"关系的"一"这一边
@@ -99,6 +124,7 @@ class User(UserMixin, db.Model):
         return '<User %r>' % self.name
 
 
+# 回调函数，用于从会话中存储的用户 ID 重新加载用户对象。它应该接受一个用户的 unicode ID 作为参数，并且返回相应的用户对象。
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))

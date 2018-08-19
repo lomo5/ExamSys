@@ -7,11 +7,11 @@ from wtforms import ValidationError
 # 登录form
 class LoginForm(FlaskForm):
     staff_number = StringField('员工编号', validators=[DataRequired(), Length(1, 8)])
-    # password = PasswordField('密码', validators=[DataRequired()])
-    # # remember_me = BooleanField('记住我的登录状态')
+    password = PasswordField('密码', validators=[DataRequired()])
+    remember_me = BooleanField('记住我的登录状态')
     submit = SubmitField('登录')
 
-
+# 由于采用
 # class RegistrationForm(FlaskForm):
 #     email = StringField('邮箱', validators=[DataRequired(), Length(1, 64),
 #                                              Email()])
@@ -33,12 +33,5 @@ class LoginForm(FlaskForm):
 #             raise ValidationError('Username already in use.')
 
 
-class ChangePasswordForm(FlaskForm):
-    old_password = PasswordField('原密码', validators=[DataRequired()])
-    password = PasswordField('新密码', validators=[
-        DataRequired(), EqualTo('password2', message='两次输入的密码必须相同')])
-    password2 = PasswordField('确认新密码',
-                              validators=[DataRequired()])
-    submit = SubmitField('修改密码')
 
 

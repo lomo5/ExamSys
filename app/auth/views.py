@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from . import auth
 from .. import db
 from ..models import User
-from .forms import LoginForm, ChangePasswordForm
+from .forms import LoginForm
 
 
 # # auth 蓝本中的 before_app_request 处 理程序会在每次请求前运行
@@ -15,16 +15,19 @@ from .forms import LoginForm, ChangePasswordForm
 
 @auth.route('/login')
 def login():
-    form = LoginForm()
-    # if form.validate_on_submit():
-    #     user = User.query.filter_by(staff_number=form.staff_number.data).first()
-    #     if user is not None and user.verify_password(form.password.data):
-    #         login_user(user, form.remember_me.data)
-    #         next_page = request.args.get('next')
-    #         if next_page is None or not next_page.startswith('/'):
-    #             next_page = url_for('home.index')
-    #         return redirect(next_page)
-    #     flash('用户名或密码错误！')
+    form = LoginForm()  # 创建loginform对象
+    if form.validate_on_submit():  # 如果验证通过，并点击了提交
+        user = User.query.filter_by(staff_number=form.staff_number.data).first()
+        if user is not None and user.verify_password(form.password.data):
+            # login_user(user, remember=False, duration=None, force=False, fresh=True)
+            # 调用login_user函数将user对象保存在会话上下文中
+            login_user(user, form.remember_me.data)
+            # next：用户访问未授权的URL时会转到登录表单，Flask-Login把原地址保存在查询字符串的next参数中。
+            next_page = request.args.get('next')  # 从request.args字典中读取next参数
+            if next_page is None or not next_page.startswith('/'):
+                next_page = url_for('home.index')
+            return redirect(next_page)
+        flash('用户名或密码错误！')
     return render_template('auth/login.html', form=form)
 
 
@@ -32,7 +35,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash('You have been logged out.')
+    flash('您已注销！')
     return redirect(url_for('home.index'))
 
 
@@ -45,8 +48,8 @@ def change_password():
             current_user.password = form.password.data
             db.session.add(current_user)
             db.session.commit()
-            flash('Your password has been updated.')
+            flash('您的密码已修改。')
             return redirect(url_for('home.index'))
         else:
-            flash('Invalid password.')
+            flash('无效的密码！')
     return render_template("auth/change_password.html", form=form)

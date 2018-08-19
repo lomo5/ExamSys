@@ -85,7 +85,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(100), nullable=False)  # 密码
     email = db.Column(db.String(100), nullable=True)
     mobile_phone = db.Column(db.String(11), nullable=True)  # 手机号
-    face_url = db.Column(db.String(255), nullable=True)  # 头像网址
+    face_url = db.Column(db.String(255), nullable=True, default='static/defaultavatar.png')  # 头像网址
     info = db.Column(db.Text, nullable=True)  # 信息
     add_time = db.Column(db.DateTime, index=True, default=datetime.utcnow,
                          nullable=False)  # 注册时间；index=True表示为该列建索引；

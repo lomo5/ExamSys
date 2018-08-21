@@ -11,4 +11,28 @@ from .forms import RegistrationForm
 @admin.route('/')
 def index():
     form = RegistrationForm()
-    return render_template('admin/test.html', form)
+    return render_template('admin/report.html', form)
+
+
+@admin.route('/question_manage')
+def question_manage():
+    form = RegistrationForm()
+    return render_template('admin/report.html', form)
+
+
+@admin.route('/paper_manage')
+def paper_manage():
+    form = RegistrationForm()
+    return render_template('admin/report.html', form)
+
+
+@admin.route('/user_manage')
+def user_manage():
+    form = RegistrationForm()
+    return render_template('admin/report.html', form)
+
+
+@admin.route('/report')
+def report():
+    form = RegistrationForm()
+    return render_template('admin/report.html', form)

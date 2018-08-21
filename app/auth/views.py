@@ -3,7 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from . import auth
 from .. import db
 from ..models import User
-from .forms import LoginForm
+from .forms import LoginForm, ChangePasswordForm
 
 
 # # auth 蓝本中的 before_app_request 处 理程序会在每次请求前运行
@@ -16,7 +16,7 @@ from .forms import LoginForm
 @auth.route('/login')
 def login():
     form = LoginForm()  # 创建loginform对象
-    if form.validate_on_submit():  # 如果验证通过，并点击了提交
+    if form.validate_on_submit():  # #判断request带POST数据，且数据符合表单定义要求
         user = User.query.filter_by(staff_number=form.staff_number.data).first()
         if user is not None and user.verify_password(form.password.data):
             # login_user(user, remember=False, duration=None, force=False, fresh=True)
@@ -53,3 +53,4 @@ def change_password():
         else:
             flash('无效的密码！')
     return render_template("auth/change_password.html", form=form)
+

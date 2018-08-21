@@ -4,10 +4,12 @@
 {% block title %}电力调考平台{% endblock %}
 
 {% block page_content %}
-<div class="page-header">
-    <h1>Hello</h1>
-    <h1><img src="{{ url_for('static', filename='test.jpeg') }}"></h1>
-
-</div>
-{#{{ wtf.quick_form(form) }}#}
+    <div class="page-header">
+        <h1>电力调考平台</h1>
+        <ul class="list-group">
+            <li class="list-group-item">请使用工号、密码登录。</li>
+            <li class="list-group-item">如果忘记密码，请于管理员联系。电话：12345678901</li>
+        </ul>
+    </div>
+    {#{{ wtf.quick_form(form) }}#}
 {% endblock %}

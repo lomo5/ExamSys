@@ -5,6 +5,7 @@ from wtforms import ValidationError
 from .. import db
 from ..models import Subject, Question
 
+
 # todo: 点击提交后如果验证通过，则转到答题页面，同时将subject存入session
 # 开始练习
 class ExerciseBeginForm(FlaskForm):
@@ -16,12 +17,17 @@ class ExerciseBeginForm(FlaskForm):
     # q_answer = BooleanField('简答题')
     submit = SubmitField('开始')
 
-    def __init__(self):
-        subject_list = Subject.query.all()  # 取得所有subject用来提供给下拉选择框
-        resp_list = []  #（科目id，科目名）的list
-        for subject in subject_list:
-            resp_list.append((subject.id, subject.subject_name))
-        self.subject = SelectField('选择专业', choices=resp_list)
+    # 在初始化Form实例时指定selectField的choices内容。参考：https://blog.csdn.net/agmcs/article/details/45308431
+    def __init__(self, *args, **kwargs):
+        super(ExerciseBeginForm, self).__init__(*args, **kwargs)
+        self.subject.choices = [(subject.id, subject.name) for subject in Subject.query.order_by(Subject.name).all()]
+    # 以下是自己原来写的：
+    # def __init__(self):
+    #     subject_list = Subject.query.all()  # 取得所有subject用来提供给下拉选择框
+    #     resp_list = []  #（科目id，科目名）的list
+    #     for subject in subject_list:
+    #         resp_list.append((subject.id, subject.subject_name))
+    #     self.subject = SelectField('选择专业', choices=resp_list)
 
 
 # todo:开始答题后分两步：
@@ -49,10 +55,19 @@ class ExercisesForm(FlaskForm):
     # 简答
     saq =  TextAreaField(render_kw = {"placeholder": "答案写在这里"})
 
-    def __init__(self, single_choises=None, fill_num=0):
+    def __init__(self, single_choises=None, multi_num=0, fill_num=0):
+        """
+        single_choises：单选题radiofield 的choices属性；
+        fill_num:填空题的空格数
+        multi_num:多选题的选项数
+            但是根据官方文档（https://wtforms.readthedocs.io/en/stable/fields.html#field-enclosures）的描述，FieldList不能包含（enclose） BooleanField 或 SubmitField 实例。
+            是否意味着BooleanField 和 SubmitField 不能动态创建？
+        todo:确定form中能否这样动态生成field！！！！
+        """
         self.single = RadioField(choices=single_choises)  # 初始化单选题
         for i in range(fill_num):  # 初始化填空题
             self.fill.append(StringField())
+
 
 # 单选选择题的选项
 class ExerciseSingleForm(FlaskForm):
@@ -76,15 +91,9 @@ class ExerciseMultiChoiceForm(FlaskForm):
     checkbox6 = BooleanField('')
     submit = SubmitField('提交')
 
-# todo:练习的填空和简答的form
+
 # 填空题的空
 class ExerciseFillForm(FlaskForm):
-    def __init__(self, bnum):
-        self.blank_num = bnum
-        for i in range(self.blank_num):
-
-
-
     submit = SubmitField('下一题')
 
 

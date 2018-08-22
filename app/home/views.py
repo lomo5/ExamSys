@@ -1,10 +1,11 @@
-from flask import render_template, redirect, request, url_for, flash, session
-from . import home  # 导入blueprint
-from .. import db
-from ..models import User, Subject, Paper, Question, QuestionType
-from flask_login import login_required, current_user
-from .forms import ExerciseBeginForm, ExerciseSingleForm, ExerciseAnswerForm, ExerciseFillForm, ExerciseMultiChoiceForm,ExerciseTrueFalseForm
 import random
+
+from flask import render_template, redirect, url_for, flash, session
+from flask_login import login_required
+
+from . import home  # 导入blueprint
+from .forms import ExerciseBeginForm, ExercisesForm, ExerciseSingleForm
+from ..models import Question
 
 
 # 主页
@@ -37,9 +38,15 @@ def exercise():
 @home.route('/exercises')
 @login_required
 def exercises():
-    alphabet=['A', 'B', 'C', 'D', 'E', 'F']
+    form = ExercisesForm()
+    if form.validate_on_submit():  # 判断request带POST数据，且数据符合表单定义要求
+        # 点击了"提交"按钮。todo：接下来判断答案对错，如果答错，则显示正确答案
+        pass
+
+    # 如果不是点击"提交"（即前一题答对或现在是第一题），则生成试题并显示
+    # alphabet = ['A', 'B', 'C', 'D', 'E', 'F']
     q_id_list = session.get('q_ids').split(',')  # 已经练过的问题的id的列表
-    q_over=[]  # 已经练过的问题的列表
+    q_over = []  # 已经练过的问题的列表
     for qid in q_id_list:  # 从session中提取已经练过的问题的id列表
         q_over.append(Question.query.filter_by(id=qid).first())
     # 提取一道没有做过的随机题目
@@ -54,7 +61,8 @@ def exercises():
             ans = q.answer
             form = ExerciseSingleForm(option_list)
     # todo: 判断上一题对错并回显；已回显的则显示下一题；所有题目答完的判断；如果session中题目列表为空，则生成所有题目的随机顺序id列表
-    return render_template('home/exercises.html', form=form, question_context=q_context)
+    return render_template('home/exercises.html', form=form, question_context=q_context,
+                           question_type=q.question_type.type_name)
 
 
 # 试卷考试
@@ -71,6 +79,5 @@ def random_question(q_over, s_id):
     for q in q_over:  # 把已经联系过的题目去掉
         all_question.pop(q)
     if len(all_question) > 0:  # 如果未考题目列表中还有题目，则随即返回一道题目
-            return random.choice(all_question)
+        return random.choice(all_question)
     return None  # 否则（已练完所有题）返回None
-

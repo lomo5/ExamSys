@@ -5,3 +5,9 @@
 1. url_for()函数最简单的用法是以视图函数名(或者 app.add_url_route() 定义路由时使用 的端点名)作为参数，返回对应的 URL。例如，在当前版本的 hello.py 程序中调用 url_ for('index')得到的结果是/。体检工作了吧玩调用url_for('index', _external=True)返回的则是绝对地 址，在这个示例中是 http://localhost:5000/。传入 url_for() 的关键字参数不仅限于动态路由中的参数。函数能将任何额外参数添加到 查询字符串中。例如，url_for('index', page=2)的返回结果是/?page=2。
     1. 注意：生成连接程序内不同路由的链接时，使用相对地址就足够了。如果要生成在浏览器之外使用的链接，则必须使用绝对地址，例如在电子邮件中发送的链接。
 2. 点击"login"，在调用full_dispatch_request(self)函数时，try其中的request_started.send(self)和rv = self.preprocess_request()时先后出错（前者在蓝图注册中有auth时，后者在去掉auth后）。
+3. 为什么不能再__init__()中动态添加field：WTForms uses a [metaclass](https://github.com/wtforms/wtforms/blob/2.0/wtforms/form.py#L167) to handle binding at instantiation time. This metaclass does its work before Form.__init__ is called, thus making it not possible for something in __init__ to create a field that's bound.[原文地址](https://stackoverflow.com/questions/23594448/wtforms-adding-dynamic-fields-with-multiple-inheritance)
+4. 创建数据库表：
+    1. 在配置文件中设置数据库链接参数：SQLALCHEMY_DATABASE_URI
+    2. 命令行虚拟环境(venv)下执行export FLASK_APP=manage.py，添加环境变量。
+    3. 命令行执行flask shell，来打开shell并导入manage.py中make_shell_context()定义的instance。
+    4. python中执行db.create_all()创建所有表。

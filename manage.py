@@ -8,7 +8,9 @@ from app.models import User, Role, Subject, QuestionType, Question, Paper, Score
 app = create_app(os.getenv('FLASK_CONFIG') or 'default')  # 以默认配置启动，如果存在操作系统环境变量中，则使用create_app(os.getenv('FLASK_CONFIG') or 'default')
 
 
-# 命令行参数。使用命令行前需要现在虚拟环境下执行export FLASK_APP=manage.py，添加环境变量。然后才能通过flask shell来打开shell并导入以下dict中的instance。
+# 命令行参数。
+# 使用命令行前需要现在虚拟环境下执行export FLASK_APP=manage.py，添加环境变量。
+# 然后才能通过flask shell来打开shell并导入以下dict中的instance。
 @app.shell_context_processor
 def make_shell_context():
     return dict(app=app, db=db, User=User, Role=Role, Subject=Subject,

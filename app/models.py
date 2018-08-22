@@ -85,7 +85,7 @@ class User(UserMixin, db.Model):
     created_papers = db.relationship('Paper', backref='create_user', lazy='dynamic')  # 关系：一对多/该用户创建的试卷
     scores = db.relationship('Score', backref='user', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/成绩
     mistakes = db.relationship('Mistake', backref='user', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/错题
-    # 默认每个用户都关联所有科目
+    # todo:默认每个用户都关联所有科目
     subjects = db.relationship('Subject',
                                secondary=usersubject,
                                backref=db.backref('subjects', lazy='dynamic'),
@@ -126,6 +126,7 @@ class QuestionType(db.Model):
     __tablename__ = 'question_types'
     id = db.Column(db.Integer, primary_key=True)
     # 题型：单选:SINGLE、多选MULTI、判断题TF、填空题（有序填空ORDERFILL/无序填空FILL）、简答SAQ（short answer question）
+    # todo:表中的题型名称使用中文！
     type_name = db.Column(db.String(100), nullable=False, unique=True)
     # 关系、外键：
     questions = db.relationship('Question', backref='question_type', lazy='dynamic')  # 关系：一对多/试题
@@ -137,24 +138,19 @@ class QuestionType(db.Model):
 class Question(db.Model):
     """试题
     说明:
-    1、对于判断题：
-       用一位二进制数表示对错
-    2、对于选择题：
-       此列为以特殊字符'||'分开的字串
-    3、对于填空题：
-       为用特殊符号分割的字串
-       如果存在多个可能答案，则用&&之类的特定符号链接
+    1、question # 题干
+    2、options  # 选择题的备选答案，只有选择题有，是用"||"分割的字串
+    3、answer  # 答案，选择题是ABCDEF，判断题是True/False，填空为||分割的文字，简答为答案文字
     4、对于答案的分离处理及显示格式，均由前台来处理
-    5、对于简答题，直接存储答案。
-    6、判断题：答案为True、False
     """
     __tablename__ = 'questions'
     id = db.Column(db.Integer, primary_key=True)
     question = db.Column(db.Text, nullable=False)  # 题干
-    options = db.Column(db.Text, nullable=True)  # 备选答案，只有选择题有，是用"||"分割的字串
+    options = db.Column(db.Text, nullable=True)  # 选择题的备选答案，只有选择题有，是用"||"分割的字串
     answer = db.Column(db.Text, nullable=False)  # 答案，选择题是ABCDEF，判断题是True/False，填空为||分割的文字，简答为答案文字
     pic_url = db.Column(db.Text, nullable=True)  # 关联图片链接
     add_time = db.Column(db.DateTime, default=datetime.utcnow)  # 添加时间
+    info = db.Column(db.Text, nullable=True)  # 信息，比如试题出处之类
     # 关系、外键：
     qtype_id = db.Column(db.Integer, db.ForeignKey('question_types.id'))  # 外键：题型
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'))  # 外键：科目

@@ -1,9 +1,10 @@
 # coding:utf-8
 
 from datetime import datetime
-import hashlib
+
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+
 from . import db, login_manager
 
 
@@ -16,31 +17,31 @@ from . import db, login_manager
 class Role(db.Model):
     """用户角色：admins，表示管理员。user，表示普通用户"""
     __tablename__ = 'roles'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
     role_name = db.Column(db.String(100), nullable=False)
     # 关系、外键：
     users = db.relationship('User', backref='role', lazy='dynamic', cascade='all, delete-orphan')
 
     def __repr__(self):
-        return '<Role %r>' % self.name
+        return '<Role id:%r, role_name:%r>' % (self.id, self.role_name)
 
 
 class Department(db.Model):
     """用户所在部门"""
     __tablename__ = 'departments'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
     department_name = db.Column(db.String(100), nullable=False)
     # 关系、外键：
     users = db.relationship('User', backref='department', lazy='dynamic')
 
     def __repr__(self):
-        return '<Department %r>' % self.name
+        return '<Department id:%r, department_name:%r>' % (self.id, self.department_name)
 
 
 class Subject(db.Model):
     """科目"""
     __tablename__ = 'subjects'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
     subject_name = db.Column(db.String(100), unique=True, nullable=False)
     # 关系、外键：
     questions = db.relationship('Question', backref='subject', lazy='dynamic',
@@ -48,7 +49,7 @@ class Subject(db.Model):
     papers = db.relationship('Paper', backref='subject', lazy='dynamic', cascade='all, delete-orphan')  # 关系：多对一/试卷
 
     def __repr__(self):
-        return '<Subject %r>' % self.name
+        return '<Subject id:%r, subject_name:%r>' % (self.id, self.subject_name)
 
 
 # User和Subject对应关系表（多对多）,用来控制哪些科目对某用户可见。
@@ -62,17 +63,17 @@ usersubject = db.Table('usersubject', db.Column('user_id', db.Integer, db.Foreig
 class User(UserMixin, db.Model):
     """用户数据模型"""
     __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-    staff_number = db.Column(db.String(255), index=True, unique=True, nullable=False)  # 工号
-    username = db.Column(db.String(100), unique=True, index=True, nullable=False)  # 唯一
+    id = db.Column(db.Integer, primary_key=True, unique=True)
+    staff_number = db.Column(db.String(255), index=True, unique=True, nullable=False)  # 工号，唯一
+    username = db.Column(db.String(100), index=True, nullable=False)  # 姓名
     password_hash = db.Column(db.String(100), nullable=False)  # 密码
-    email = db.Column(db.String(100), nullable=True)
-    mobile_phone = db.Column(db.String(11), nullable=True)  # 手机号
+    email = db.Column(db.String(100), nullable=True, unique=True)
+    mobile_phone = db.Column(db.String(11), nullable=True, unique=True)  # 手机号
     face_url = db.Column(db.String(255), nullable=True, default='static/defaultavatar.png')  # 头像网址
     info = db.Column(db.Text, nullable=True)  # 信息
     add_time = db.Column(db.DateTime, index=True, default=datetime.utcnow,
                          nullable=False)  # 注册时间；index=True表示为该列建索引；
-    last_time = db.Column(db.DateTime(), default=datetime.utcnow)  # 上次登陆时间
+    last_time = db.Column(db.DateTime(), index=True, default=datetime.utcnow)  # 上次登陆时间
     question_quantity = db.Column(db.Integer, default=0)  # 做题数量
 
     # 关系、外键：
@@ -112,7 +113,7 @@ class User(UserMixin, db.Model):
         db.session.add(self)
 
     def __repr__(self):
-        return '<User %r>' % self.name
+        return '<User id:%r, staff_number:%r, username:%r>' % (self.id, self.staff_number, self.username)
 
 
 # 回调函数，用于从会话中存储的用户 ID 重新加载用户对象。它应该接受一个用户的 unicode ID 作为参数，并且返回相应的用户对象。
@@ -124,7 +125,7 @@ def load_user(user_id):
 class QuestionType(db.Model):
     """题型"""
     __tablename__ = 'question_types'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
     # 题型：单选:SINGLE、多选MULTI、判断题TF、填空题（有序填空ORDERFILL/无序填空FILL）、简答SAQ（short answer question）
     # todo:表中的题型名称使用中文！
     type_name = db.Column(db.String(100), nullable=False, unique=True)
@@ -132,7 +133,7 @@ class QuestionType(db.Model):
     questions = db.relationship('Question', backref='question_type', lazy='dynamic')  # 关系：一对多/试题
 
     def __repr__(self):
-        return '<QuestionType %r>' % self.name
+        return '<QuestionType id:%r, type_name:%r>' % (self.id, self.type_name)
 
 
 class Question(db.Model):
@@ -144,7 +145,7 @@ class Question(db.Model):
     4、对于答案的分离处理及显示格式，均由前台来处理
     """
     __tablename__ = 'questions'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
     question = db.Column(db.Text, nullable=False)  # 题干
     options = db.Column(db.Text, nullable=True)  # 选择题的备选答案，只有选择题有，是用"||"分割的字串
     answer = db.Column(db.Text, nullable=False)  # 答案，选择题是ABCDEF，判断题是True/False，填空为||分割的文字，简答为答案文字
@@ -155,10 +156,10 @@ class Question(db.Model):
     qtype_id = db.Column(db.Integer, db.ForeignKey('question_types.id'))  # 外键：题型
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'))  # 外键：科目
     mistakes = db.relationship('Mistake', backref='question', lazy='dynamic')  # 关系：一对多/错题
-    answers = db.relationship('Answer', backref='question', lazy='dynamic')  # 关系：一对多/正确答案
+    # answers = db.relationship('Answer', backref='question', lazy='dynamic')  # 关系：一对多/正确答案
 
     def __repr__(self):
-        return '<Question %r>' % self.name
+        return '<Question id:%r, add_time:%r>' % (self.id, self.add_time)
 
 
 # class Answer(db.Model):
@@ -182,7 +183,7 @@ paperquestion = db.Table('paperquestion', db.Column('paper_id', db.Integer, db.F
 class Paper(db.Model):
     """试卷"""
     __tablename__ = 'papers'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
     add_time = db.Column(db.DateTime, default=datetime.utcnow)  # 添加时间
     # 关系、外键：
     create_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # 外键：创建用户id
@@ -198,16 +199,16 @@ class Paper(db.Model):
                                 backref=db.backref('papers', lazy='dynamic'),
                                 lazy='dynamic'
                                 )
-    mistakes = db.relationship('Mistake', backref='paper', lazy='dynamic')
+    # mistakes = db.relationship('Mistake', backref='paper', lazy='dynamic')  # 不再与错误关联
 
     def __repr__(self):
-        return '<Paper %r>' % self.name
+        return '<Paper id:%r, add_time:%r>' % (self.id, self.add_time)
 
 
 class Score(db.Model):
     """成绩"""
     __tablename__ = 'scores'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
     score = db.Column(db.Integer, nullable=False)  # 成绩
     begin_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)  # 开始考试时间
     end_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)  # 结束考试时间
@@ -216,7 +217,7 @@ class Score(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 外键：用户id
 
     def __repr__(self):
-        return '<Score %r>' % self.name
+        return '<Score id:%r, score:%r>' % (self.id, self.score)
 
 
 # class Exercise(db.Model):
@@ -235,11 +236,11 @@ class Mistake(db.Model):
     与用户为多对一关系，与试题为多对一关系。
     """
     __tablename__ = 'mistakes'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 外键：用户id
     # paper_id = db.Column(db.Integer, db.ForeignKey('papers.id'))  # 外键：试卷id。删除原因：由于有刷题练习错误情况，因此不能与试卷挂钩
     question_id = db.Column(db.Integer, db.ForeignKey('questions.id'))  # 外键：试题id
     wrong_times = db.Column(db.Integer, default=1, nullable=False)  # 错误次数
 
     def __repr__(self):
-        return '<Mistake %r>' % self.name
+        return '<Mistake id:%r, user_id:%r, question_id:%r>' % (self.id, self.user_id, self.question_id)

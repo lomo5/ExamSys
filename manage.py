@@ -3,6 +3,7 @@ from flask_script import Manager  # 旧版的实现命令行的程序包
 import os
 from app import create_app, db
 from app.models import User, Role, Subject, QuestionType, Question, Paper, Score, Mistake
+from app.filldb import FillDb
 
 
 app = create_app(os.getenv('FLASK_CONFIG') or 'default')  # 以默认配置启动，如果存在操作系统环境变量中，则使用create_app(os.getenv('FLASK_CONFIG') or 'default')
@@ -14,7 +15,7 @@ app = create_app(os.getenv('FLASK_CONFIG') or 'default')  # 以默认配置启�
 @app.shell_context_processor
 def make_shell_context():
     return dict(app=app, db=db, User=User, Role=Role, Subject=Subject,
-                QuestionType=QuestionType, Question=Question, Paper=Paper, Score=Score, Mistake=Mistake)
+                QuestionType=QuestionType, Question=Question, Paper=Paper, Score=Score, Mistake=Mistake, FillDb=FillDb)
 
 
 # 以下内容为旧版的以flask-script实现的命令行：

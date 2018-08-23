@@ -6,11 +6,11 @@ from ..models import User
 from .forms import LoginForm, ChangePasswordForm
 
 
-# # auth 蓝本中的 before_app_request 处 理程序会在每次请求前运行
-# @auth.before_app_request
-# def before_request():
-#     if current_user.is_authenticated:
-#         current_user.ping()  # 每次收到用户的请求时都要调用 User对象的ping() 方法更新用户的"上次访问时间"
+# auth 蓝本中的 before_app_request 处 理程序会在每次请求前运行
+@auth.before_app_request
+def before_request():
+    if current_user.is_authenticated:
+        current_user.ping()  # 每次收到用户的请求时都要调用 User对象的ping() 方法更新用户的"上次访问时间"
 
 
 @auth.route('/login')

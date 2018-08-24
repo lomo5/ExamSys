@@ -32,8 +32,8 @@ class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
         'mysql://root:root@localhost:8889/examsysdev'
-    # 腾讯云数据库外网访问地址：bj-cdb-9tbyx2xy.sql.tencentcdb.com:62978
-    # 本季数据库：mysql://root:root@localhost:8889/examsysdev
+    # 腾讯云数据库外网临时访问地址：bj-cdb-9tbyx2xy.sql.tencentcdb.com:62978
+    # 本机数据库：mysql://root:root@localhost:8889/examsysdev
 
 # 测试环境配置
 class TestingConfig(Config):

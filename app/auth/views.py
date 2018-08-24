@@ -13,7 +13,7 @@ def before_request():
         current_user.ping()  # 每次收到用户的请求时都要调用 User对象的ping() 方法更新用户的"上次访问时间"
 
 
-@auth.route('/login')
+@auth.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()  # 创建loginform对象
     if form.validate_on_submit():  # #判断request带POST数据，且数据符合表单定义要求
@@ -31,7 +31,7 @@ def login():
     return render_template('auth/login.html', form=form)
 
 
-@auth.route('/logout')
+@auth.route('/logout', methods=['GET', 'POST'])
 @login_required
 def logout():
     logout_user()
@@ -52,5 +52,5 @@ def change_password():
             return redirect(url_for('home.index'))
         else:
             flash('无效的密码！')
-    return render_template("auth/change_password.html", form=form)
+    return render_template("auth/change_password.html", form=form, username=current_user.username)
 

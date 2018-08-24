@@ -9,7 +9,9 @@ from ..models import Subject, Question
 # todo: 点击提交后如果验证通过，则转到答题页面，同时将subject存入session
 # 开始练习
 class ExerciseBeginForm(FlaskForm):
-    subject = SelectField('选择专业')  # choices在view中填充
+    #
+    # todo:研究一下：还有这种field：'QuerySelectField', 'QuerySelectMultipleField','QueryRadioField', 'QueryCheckboxField',(网址：https://github.com/wtforms/wtforms-sqlalchemy）
+    subject = SelectField('选择专业', coerce=int)  # choices在view中填充；参数”coerce”参数来强制转换选择项值的类型（默认是string，由于id实际上是int类型，因此会导致提交时始终验证不过Not a valid choice
     # q_single = BooleanField('单选题')
     # q_multi = BooleanField('多选题')
     # q_fill = BooleanField('填空题')
@@ -20,7 +22,7 @@ class ExerciseBeginForm(FlaskForm):
     # 在初始化Form实例时指定selectField的choices内容。参考：https://blog.csdn.net/agmcs/article/details/45308431
     def __init__(self, *args, **kwargs):
         super(ExerciseBeginForm, self).__init__(*args, **kwargs)
-        self.subject.choices = [(subject.id, subject.name) for subject in Subject.query.order_by(Subject.name).all()]
+        self.subject.choices = [(subject.id, subject.subject_name) for subject in Subject.query.order_by(Subject.subject_name).all()]
     # 以下是自己原来写的：
     # def __init__(self):
     #     subject_list = Subject.query.all()  # 取得所有subject用来提供给下拉选择框
@@ -31,7 +33,7 @@ class ExerciseBeginForm(FlaskForm):
 
 
 # todo:开始答题后分两步：
-# 1、显示试题和"提交"按钮；
+# 1、显示试题和"提交"按钮；如果
 # 2、提交后根据对错来决定下一步是显示答案还是继续下一题（继续的话flash显示正确）；同时将答过的题存入session中的一个list中，如果做错则存入错题表中（同时将改错题的错误次数加1）
 # 注意：显示答案时，需要将用户的答案显示出来（选择题保持用户的选中状态，填空简答在文本框中显示用户的输入）正确答案另外显示。
 # 注意：

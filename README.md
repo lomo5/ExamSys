@@ -11,3 +11,13 @@
     2. 命令行虚拟环境(venv)下执行export FLASK_APP=manage.py，添加环境变量。
     3. 命令行执行flask shell，来打开shell并导入manage.py中make_shell_context()定义的instance。
     4. python中执行db.create_all()创建所有表。
+5. 数据迁移（migrate）
+    1. 安装模块：(venv) $ pip install flask-migrate
+    2. 初始化：(venv) $ flask db init
+    3. 改动了数据库模型（Models）
+    4. 创建脚本：(venv) $ flask db migrate -m "say something to describe the modification"
+    5. 检查脚本是否正确（自动生成的脚本可能会有错！！！）
+    6. 将创建的脚本纳入版本管理
+    7. 升级数据库：(venv) $ flask db upgrade
+    8. 如果在升级之前又做了改动，可以回退，然后删除就脚本，重新生成脚本（步骤4）：(venv) $ flask db downgrade
+

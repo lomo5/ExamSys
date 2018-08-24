@@ -1,7 +1,7 @@
 import random
 
 from flask import render_template, redirect, url_for, flash, session
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from . import home  # 导入blueprint
 from .forms import ExerciseBeginForm, ExercisesForm, ExerciseSingleForm
@@ -11,6 +11,8 @@ from ..models import Question
 # 主页
 @home.route('/', methods=['GET', 'POST'])
 def index():
+    if current_user.is_authenticated:
+        return render_template('home/index.html', username=current_user.username)
     return render_template('home/index.html')
 
 
@@ -18,7 +20,7 @@ def index():
 @home.route('/info', methods=['GET', 'POST'])
 @login_required
 def info():
-    return render_template('home/index.html')
+    return render_template('home/index.html', username=current_user.username)
 
 
 # 刷题开始页
@@ -28,14 +30,15 @@ def exercise():
     form = ExerciseBeginForm()
     # 1、选科目；2、如果已经选择了科目并点击"开始"，如果验证通过，则转到答题页面，同时将subject存入session
     if form.validate_on_submit():
-        session['subject_id'] = form.subject.data  # 保存科目
-        session['q_ids'] = ''  # 清空已答题id列表
+        session['subject_id'] = form.subject.data  # 保存科目，通过session变量传给题目显示页
+        session['q_ids'] = ''  # 清空已答题id列表；q_ids为以逗号分隔的question_id组成的字串，记录所有已经做过的问题
+        session['current_q'] = 0  # 当前页面显示第几题（即当前题在q_ids中排第几个，用于前后翻页的情况）；0表示没有开始
         return redirect(url_for('home.exercises'))
-    return render_template('home/exercise.html', form=form)
+    return render_template('home/exercise.html', form=form, username=current_user.username)
 
 
 # 题目显示页
-@home.route('/exercises')
+@home.route('/exercises', methods=['GET', 'POST'])
 @login_required
 def exercises():
     form = ExercisesForm()
@@ -62,14 +65,14 @@ def exercises():
             form = ExerciseSingleForm(option_list)
     # todo: 判断上一题对错并回显；已回显的则显示下一题；所有题目答完的判断；如果session中题目列表为空，则生成所有题目的随机顺序id列表
     return render_template('home/exercises.html', form=form, question_context=q_context,
-                           question_type=q.question_type.type_name)
+                           question_type=q.question_type.type_name, username=current_user.username)
 
 
 # 试卷考试
 @home.route('/examine', methods=['GET', 'POST'])
 @login_required
 def exam():
-    return render_template('home/examine.html')
+    return render_template('home/examine.html', username=current_user.username)
 
 
 # 生成随机题目

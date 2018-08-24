@@ -15,7 +15,10 @@ from . import db, login_manager
 
 
 class Role(db.Model):
-    """用户角色：admins，表示管理员。user，表示普通用户"""
+    """用户角色：
+    admins，表示管理员。
+    user，表示普通用户
+    """
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True, unique=True)
     role_name = db.Column(db.String(100), nullable=False)
@@ -156,28 +159,31 @@ class Question(db.Model):
     qtype_id = db.Column(db.Integer, db.ForeignKey('question_types.id'))  # 外键：题型
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'))  # 外键：科目
     mistakes = db.relationship('Mistake', backref='question', lazy='dynamic')  # 关系：一对多/错题
-    # answers = db.relationship('Answer', backref='question', lazy='dynamic')  # 关系：一对多/正确答案
+    pq_scores = db.relationship('PaperQuestionScore', backref='question', lazy='dynamic')  # 关系：一对多/题目分值
 
     def __repr__(self):
         return '<Question id:%r, add_time:%r>' % (self.id, self.add_time)
 
-
-# class Answer(db.Model):
-#     """答案"""
-#     __tablename__='answers'
-#     id = db.Column(db.Integer, primary_key=True)
-#     # 关系、外键：
-#
-#     def __repr__(self):
-#         return '<Answer %r>' % self.name
+# 放弃中间表的方式来关联Paper和Question，改用表示每道题分值的PaperQuestionScore模型（8月24日）
+# # 试卷、试题关联表
+# # 在多对多关系中，用来关联paper表和question表的helper表，我们不需要关心这张表，因为这张表将会由SQLAlchemy接管，
+# # 它唯一的作用是作为papers表和questions表关联表，所以必须在db.relationship()中指出sencondary关联表参数。
+# paperquestion = db.Table('paperquestion', db.Column('paper_id', db.Integer, db.ForeignKey('papers.id')),
+#                          db.Column('question_id', db.Integer, db.ForeignKey('questions.id')),
+#                          db.Column('number', db.Integer, nullable=True))
 
 
-# 试卷、试题关联表
-# 在多对多关系中，用来关联paper表和question表的helper表，我们不需要关心这张表，因为这张表将会由SQLAlchemy接管，
-# 它唯一的作用是作为papers表和questions表关联表，所以必须在db.relationship()中指出sencondary关联表参数。
-paperquestion = db.Table('paperquestion', db.Column('paper_id', db.Integer, db.ForeignKey('papers.id')),
-                         db.Column('question_id', db.Integer, db.ForeignKey('questions.id')),
-                         db.Column('number', db.Integer, nullable=True))
+class PaperQuestionScore(db.Model):
+    """试卷中每道题的分值。
+    通过这个表（类）关联起paper和question的多对多关系。
+    比起用一个仅包含paper_id和question_id的中间表，这种方式能存储分值，更高效，减少浪费。
+    """
+    __tablename__ = 'paper_question_scores'
+    id = db.Column(db.Integer, primary_key=True, unique=True)
+    pq_score = db.Column(db.Integer, nullable=False)  # 题目分值
+    # 关系、外键：
+    paper_id= db.Column('paper_id', db.Integer, db.ForeignKey('papers.id'))
+    question_id = db.Column('question_id', db.Integer, db.ForeignKey('questions.id'))
 
 
 class Paper(db.Model):
@@ -188,36 +194,71 @@ class Paper(db.Model):
     # 关系、外键：
     create_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # 外键：创建用户id
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'))  # 外键：科目
-    scores = db.relationship('Score', backref='paper', lazy='dynamic', cascade='all, delete-orphan')  # 关系：多对一/成绩
-    '''
-    paperquestion表由db.Table声明，我们不需要关心这张表，因为这张表将会由SQLAlchemy接管，
-    它唯一的作用是作为papers表和questions表关联表，所以必须在db.relationship()
-    中指出sencondary关联表参数。
-    '''
-    questions = db.relationship('Question',
-                                secondary=paperquestion,
-                                backref=db.backref('papers', lazy='dynamic'),
-                                lazy='dynamic'
-                                )
-    # mistakes = db.relationship('Mistake', backref='paper', lazy='dynamic')  # 不再与错误关联
+    scores = db.relationship('Score', backref='paper', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/成绩
+    pq_scores = db.relationship('PaperQuestionScore', backref='paper', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/题目分值
+    # 放弃中间表的方式来关联Paper和Question，改用表示每道题分值的PaperQuestionScore模型（8月24日）
+    # # paperquestion表由db.Table声明，我们不需要关心这张表，因为这张表将会由SQLAlchemy接管，
+    # # 它唯一的作用是作为papers表和questions表关联表，所以必须在db.relationship()
+    # # 中指出sencondary关联表参数。
+    # questions = db.relationship('Question', secondary=paperquestion,
+    #                             backref=db.backref('papers', lazy='dynamic'), lazy='dynamic')
+
 
     def __repr__(self):
         return '<Paper id:%r, add_time:%r>' % (self.id, self.add_time)
 
 
 class Score(db.Model):
-    """成绩"""
+    """成绩
+    用户做试卷的成绩
+    Score:Paper,多对一
+    Score:User,多对一
+    """
     __tablename__ = 'scores'
     id = db.Column(db.Integer, primary_key=True, unique=True)
     score = db.Column(db.Integer, nullable=False)  # 成绩
     begin_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)  # 开始考试时间
     end_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)  # 结束考试时间
+    result_list = db.Column(db.Text, nullable=True)  # 以","分隔的"T"、"F"字母的列表，表示用户某次刷题的对错结果，"T"表示做对了，"F"表示该题做错了
     # 关系、外键：
     paper_id = db.Column(db.Integer, db.ForeignKey('papers.id'))  # 外键：试卷id
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 外键：用户id
 
     def __repr__(self):
         return '<Score id:%r, score:%r>' % (self.id, self.score)
+
+
+class Mistake(db.Model):
+    """错题
+    每个用户对应多个mistake
+    每道题对应0或多个mistake
+    """
+    __tablename__ = 'mistakes'
+    id = db.Column(db.Integer, primary_key=True, unique=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 外键：用户id
+    # paper_id = db.Column(db.Integer, db.ForeignKey('papers.id'))  # 外键：试卷id。删除原因：由于有刷题练习错误情况，因此不能与试卷挂钩
+    question_id = db.Column(db.Integer, db.ForeignKey('questions.id'))  # 外键：试题id
+    wrong_times = db.Column(db.Integer, default=1, nullable=False)  # 错误次数
+    correct_times = db.Column(db.Integer, default=1, nullable=False)  # 第一次发生错误后，又做对的次数。
+    # todo：Mistake.correct_times更新可能的性能问题：每个用户每做一题都要所描一遍这个表！！！
+
+    def __repr__(self):
+        return '<Mistake id:%r, user_id:%r, question_id:%r>' % (self.id, self.user_id, self.question_id)
+
+
+class Exercise(db.Model):
+    """用户每次的做题（刷题）
+    表示用户每次练习（刷题）的时间、题目（题目id组成的字串）、每道题的对错（T、F组成的字串）
+    Exercise：User，多对一
+    采用这种方法（字串记录问题id）简化了表结构（可以少几个关系表），但是维护字串需要前台更多代码，且需要注意表变更不成功可能造成的问题！！！！！
+    """
+    __tablename__='exercises'
+    id = db.Column(db.Integer, primary_key=True, unique=True)
+    begin_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)  # 开始刷题练习时间（点击"刷题"按钮开始计）
+    question_list = db.Column(db.Text, nullable=True)  # 以","分隔的qquestion_id的列表，表示用户某次刷题的所有question
+    result_list = db.Column(db.Text, nullable=True)  # "T"、"F"字母的列表，表示用户某次刷题的对错结果，"T"表示做对了，"F"表示该题做错了
+    # 外键、关系
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 外键：用户id
 
 
 # class Exercise(db.Model):
@@ -229,18 +270,3 @@ class Score(db.Model):
 #     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 外键：用户id
 #     question_id = db.Column(db.Integer, db.ForeignKey('questions.id'))
 #
-
-
-class Mistake(db.Model):
-    """错题
-    与用户为多对一关系，与试题为多对一关系。
-    """
-    __tablename__ = 'mistakes'
-    id = db.Column(db.Integer, primary_key=True, unique=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 外键：用户id
-    # paper_id = db.Column(db.Integer, db.ForeignKey('papers.id'))  # 外键：试卷id。删除原因：由于有刷题练习错误情况，因此不能与试卷挂钩
-    question_id = db.Column(db.Integer, db.ForeignKey('questions.id'))  # 外键：试题id
-    wrong_times = db.Column(db.Integer, default=1, nullable=False)  # 错误次数
-
-    def __repr__(self):
-        return '<Mistake id:%r, user_id:%r, question_id:%r>' % (self.id, self.user_id, self.question_id)

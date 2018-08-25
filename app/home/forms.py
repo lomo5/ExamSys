@@ -1,7 +1,8 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, RadioField, BooleanField, SubmitField, SelectField, TextAreaField, Label
+from wtforms.validators import DataRequired
 
-from ..models import Subject
+from ..models import Subject, QuestionType
 
 
 # todo: 点击提交后如果验证通过，则转到答题页面，同时将subject存入session
@@ -11,11 +12,7 @@ class ExerciseBeginForm(FlaskForm):
     # todo:研究一下：还有这种field：'QuerySelectField', 'QuerySelectMultipleField','QueryRadioField', 'QueryCheckboxField',(网址：https://github.com/wtforms/wtforms-sqlalchemy）
     subject = SelectField('选择专业',
                           coerce=int)  # choices在view中填充；参数”coerce”参数来强制转换选择项值的类型（默认是string，由于id实际上是int类型，因此会导致提交时始终验证不过Not a valid choice
-    # q_single = BooleanField('单选题')
-    # q_multi = BooleanField('多选题')
-    # q_fill = BooleanField('填空题')
-    # q_truefalse = BooleanField('判断题')
-    # q_answer = BooleanField('简答题')
+    question_type = SelectField('选择题型', coerce=int)  #, validators=[DataRequired])
     submit = SubmitField('开始')
 
     # 在初始化Form实例时指定selectField的choices内容。参考：https://blog.csdn.net/agmcs/article/details/45308431
@@ -23,6 +20,10 @@ class ExerciseBeginForm(FlaskForm):
         super(ExerciseBeginForm, self).__init__(*args, **kwargs)
         self.subject.choices = [(subject.id, subject.subject_name) for subject in
                                 Subject.query.order_by(Subject.subject_name).all()]
+        self.question_type.choices = [(qtype.id, qtype.type_name) for qtype in
+                                      QuestionType.query.order_by(QuestionType.type_name).all()]
+        # todo:后期加上随机题型的选项
+
     # 以下是自己原来写的：
     # def __init__(self):
     #     subject_list = Subject.query.all()  # 取得所有subject用来提供给下拉选择框
@@ -76,11 +77,11 @@ class ExercisesForm(FlaskForm):
 # 单选选择题的选项
 class ExerciseSingleForm(FlaskForm):
     # todo:初始选项(choices)为空，view中动态添加choices
-    answers = RadioField('请选择：', choices=None)
+    answers = RadioField('请选择：', choices=None, validators=[DataRequired()])
     submit = SubmitField('提交')
 
     def __init__(self, *args, **kwargs):
-        super(ExerciseSingleForm, self).__init__(*args, **kwargs)
+        # super(ExerciseSingleForm, self).__init__(*args, **kwargs)
         answer_list = kwargs['question'].options.split('||')
         alph = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']
         self.answers.choices = list(zip(alph, answer_list))  # 超长对一个list将被截取
@@ -114,7 +115,9 @@ class ExerciseMultiChoiceForm(FlaskForm):
             # ans_list = list(question.answer)  # 把"ABCD"形式的字符串拆成单个字母的list
             for i in range(0, len(opt_list)):  # 为BooleanField添加label
                 # self.multi[i].label = alph[i] + '. ' + opt_list[i]
-                self['multi' + str(i)].label = Label(self['multi' + str(i)].id, alph[i] + '. ' + opt_list[i])  # 显示到页面之后通过控件id来修改label
+                self['multi' + str(i)].label = Label(self['multi' + str(i)].id,
+                                                     alph[i] + '. ' + opt_list[i])  # 显示到页面之后通过控件id来修改label
+
 
 # 填空题的空
 class ExerciseFillForm(FlaskForm):

@@ -1,9 +1,7 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, RadioField, BooleanField, SubmitField, FieldList, SelectMultipleField, SelectField, TextAreaField
-from wtforms.validators import DataRequired, Length, Email, Regexp, EqualTo
-from wtforms import ValidationError
-from .. import db
-from ..models import Subject, Question
+from wtforms import StringField, RadioField, BooleanField, SubmitField, SelectField, TextAreaField, Label
+
+from ..models import Subject
 
 
 # todo: 点击提交后如果验证通过，则转到答题页面，同时将subject存入session
@@ -11,7 +9,8 @@ from ..models import Subject, Question
 class ExerciseBeginForm(FlaskForm):
     #
     # todo:研究一下：还有这种field：'QuerySelectField', 'QuerySelectMultipleField','QueryRadioField', 'QueryCheckboxField',(网址：https://github.com/wtforms/wtforms-sqlalchemy）
-    subject = SelectField('选择专业', coerce=int)  # choices在view中填充；参数”coerce”参数来强制转换选择项值的类型（默认是string，由于id实际上是int类型，因此会导致提交时始终验证不过Not a valid choice
+    subject = SelectField('选择专业',
+                          coerce=int)  # choices在view中填充；参数”coerce”参数来强制转换选择项值的类型（默认是string，由于id实际上是int类型，因此会导致提交时始终验证不过Not a valid choice
     # q_single = BooleanField('单选题')
     # q_multi = BooleanField('多选题')
     # q_fill = BooleanField('填空题')
@@ -22,7 +21,8 @@ class ExerciseBeginForm(FlaskForm):
     # 在初始化Form实例时指定selectField的choices内容。参考：https://blog.csdn.net/agmcs/article/details/45308431
     def __init__(self, *args, **kwargs):
         super(ExerciseBeginForm, self).__init__(*args, **kwargs)
-        self.subject.choices = [(subject.id, subject.subject_name) for subject in Subject.query.order_by(Subject.subject_name).all()]
+        self.subject.choices = [(subject.id, subject.subject_name) for subject in
+                                Subject.query.order_by(Subject.subject_name).all()]
     # 以下是自己原来写的：
     # def __init__(self):
     #     subject_list = Subject.query.all()  # 取得所有subject用来提供给下拉选择框
@@ -50,12 +50,14 @@ class ExercisesForm(FlaskForm):
     multi4 = BooleanField('')
     multi5 = BooleanField('')
     multi6 = BooleanField('')
+    multi7 = BooleanField('')
+    multi8 = BooleanField('')
     # 判断
     truefalse = RadioField('请选择：', choices=None)
     # 填空，初始化时根据空格数动态生成
-    fill=[]
+    fill = []
     # 简答
-    saq =  TextAreaField(render_kw = {"placeholder": "答案写在这里"})
+    saq = TextAreaField(render_kw={"placeholder": "答案写在这里"})
 
     def __init__(self, single_choises=None, multi_num=0, fill_num=0):
         """
@@ -74,37 +76,74 @@ class ExercisesForm(FlaskForm):
 # 单选选择题的选项
 class ExerciseSingleForm(FlaskForm):
     # todo:初始选项(choices)为空，view中动态添加choices
-    answers = RadioField('请选择：', choices=None )
+    answers = RadioField('请选择：', choices=None)
     submit = SubmitField('提交')
 
-    def __init__(self, choises):
-        self.answers = RadioField(choices=choises)
+    def __init__(self, *args, **kwargs):
+        super(ExerciseSingleForm, self).__init__(*args, **kwargs)
+        answer_list = kwargs['question'].options.split('||')
+        alph = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']
+        self.answers.choices = list(zip(alph, answer_list))  # 超长对一个list将被截取
 
 
 # 多选题的选项
 class ExerciseMultiChoiceForm(FlaskForm):
     # todo:view中设置每个checkbox的label，template中通过判断label是否为空来决定是否显示某个选项；label前可加上A、B、C、D
     # todo:如何验证用户有没有做选择？至少选中一项
-    checkbox1 = BooleanField('')
-    checkbox2 = BooleanField('')
-    checkbox3 = BooleanField('')
-    checkbox4 = BooleanField('')
-    checkbox5 = BooleanField('')
-    checkbox6 = BooleanField('')
-    submit = SubmitField('提交')
+    # multi = []
+    # for i in range(0, 8):
+    #     multi.append(BooleanField('', default=False))
+    multi0 = BooleanField('', default=False)
+    multi1 = BooleanField('', default=False)
+    multi2 = BooleanField('', default=False)
+    multi3 = BooleanField('', default=False)
+    multi4 = BooleanField('', default=False)
+    multi5 = BooleanField('', default=False)
+    multi6 = BooleanField('', default=False)
+    multi7 = BooleanField('', default=False)
 
+    submit = SubmitField('提 交')
+
+    # 对于多选，需要在__init__()时传入question对象来初始化field的label属性。
+    def __init__(self, *args, **kwargs):
+        super().__init__(**kwargs)
+        # super(ExerciseMultiChoiceForm, self).__init__(**kwargs)  # for python2!  ?????
+        if len(kwargs) > 0:
+            opt_list = kwargs['question'].options.split('||')
+            alph = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']
+            # ans_list = list(question.answer)  # 把"ABCD"形式的字符串拆成单个字母的list
+            for i in range(0, len(opt_list)):  # 为BooleanField添加label
+                # self.multi[i].label = alph[i] + '. ' + opt_list[i]
+                self['multi' + str(i)].label = Label(self['multi' + str(i)].id, alph[i] + '. ' + opt_list[i])  # 显示到页面之后通过控件id来修改label
 
 # 填空题的空
 class ExerciseFillForm(FlaskForm):
-    submit = SubmitField('下一题')
+    # fill = []
+    # for i in range(0, 8):  # 定义8个StringField。todo：简单起见，不管空格有没有8个都显示8个空。回头再改！！
+    #     fill.append(StringField())
+    fill1 = StringField()
+    fill2 = StringField()
+    fill3 = StringField()
+    fill4 = StringField()
+    fill5 = StringField()
+    fill6 = StringField()
+    fill7 = StringField()
+    fill8 = StringField()
+    submit = SubmitField('提 交')
 
 
 # 简答题
 class ExerciseAnswerForm(FlaskForm):
-    submit = SubmitField('下一题')
+    ans = TextAreaField()
+    submit = SubmitField('提 交')
 
 
 # 判断
 class ExerciseTrueFalseForm(FlaskForm):
-    submit = SubmitField('下一题')
+    truefalse = RadioField('请选择：', choices=[(True, '对'), (False, '错')])
+    submit = SubmitField('提 交')
 
+
+# 下一题
+class ExerciseNextQuestionForm(FlaskForm):
+    submit = SubmitField('下一题')

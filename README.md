@@ -13,6 +13,9 @@
     4. python中执行db.create_all()创建所有表。
 5. 数据迁移（migrate）
     1. 安装模块：(venv) $ pip install flask-migrate
+        * 在manage.py中引入模块：from flask_migrate import Migrate
+        * manage.py中创建migrate对象：migrate = Migrate(app, db)
+            * 前面环境变量设置：export FLASK_APP=manage.py，因此这里是在manage.py中。
     2. 初始化：(venv) $ flask db init
     3. 改动了数据库模型（Models）
     4. 创建脚本：(venv) $ flask db migrate -m "say something to describe the modification"

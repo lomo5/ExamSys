@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}刷题练习{% endblock %}
+
+{% block page_content %}
+    <div class="panel panel-default">
+        <div class="panel-heading">{{ question_type }}</div>
+        <div class="panel-body">
+{#            todo: 根据传入的参数显示答案，其中选择题用颜色标出正确答案#}
+            <p>{{ question_context }}</p>
+        </div>
+        <table class="table">
+            {% for ans in answers %}
+                {% if is_correct[ans]==True %}
+                    <tr>
+                        <td class="alert alert-success">{{ ans }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td>{{ ans }}</td>
+                    </tr>
+                {% endif %}
+
+            {% endfor %}
+
+        </table>
+    </div>
+    <button class="btn btn-primary" type="button">
+        提交
+    </button>
+    {#{{ wtf.quick_form(form) }}#}
+{% endblock %}

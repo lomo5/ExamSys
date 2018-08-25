@@ -90,6 +90,7 @@ class User(UserMixin, db.Model):
     scores = db.relationship('Score', backref='user', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/成绩
     mistakes = db.relationship('Mistake', backref='user', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/错题
     # todo:默认每个用户都关联所有科目
+    exercises = db.relationship('Exercise', backref='user', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/练习（刷题）
     subjects = db.relationship('Subject',
                                secondary=usersubject,
                                backref=db.backref('subjects', lazy='dynamic'),

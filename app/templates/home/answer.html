@@ -7,27 +7,35 @@
     <div class="panel panel-default">
         <div class="panel-heading">{{ question_type }}</div>
         <div class="panel-body">
-{#            todo: 根据传入的参数显示答案，其中选择题用颜色标出正确答案#}
             <p>{{ question_context }}</p>
+
+
+            {% if question_type =='单选题' %}
+                {% for ans in options %}
+                    <div><p>{{ ans }}</p></div>
+                {% endfor %}
+                <div><div class="alert-success">正确答案：</div><p>{{ answers }}</p></div>
+            {% elif question_type =='多选题' %}
+                {% for ans in options %}
+                    <div><p>{{ ans }}</p></div>
+                {% endfor %}
+                <div><div class="alert-success">正确答案：</div><p>{{ answers }}</p></div>
+            {% elif question_type =='判断题' %}
+                <div><div class="alert-success">正确答案：</div><p>{{ answers }}</p></div>
+            {% elif question_type =='填空题' %}
+                <div><div class="alert-success">正确答案：</div></div>
+                <div>
+                    {% for ans in options %}
+                        <div><p>{{ ans }}; </p></div>
+                    {% endfor %}
+                </div>
+
+            {% elif question_type =='简答题' %}
+                <div><div class="alert-success">正确答案：</div><p>{{ answers }}</p></div>
+            {% endif %}
         </div>
-        <table class="table">
-            {% for ans in answers %}
-                {% if is_correct[ans]==True %}
-                    <tr>
-                        <td class="alert alert-success">{{ ans }}</td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td>{{ ans }}</td>
-                    </tr>
-                {% endif %}
 
-            {% endfor %}
 
-        </table>
     </div>
-    <button class="btn btn-primary" type="button">
-        提交
-    </button>
-    {#{{ wtf.quick_form(form) }}#}
+    {{ wtf.quick_form(form) }}
 {% endblock %}

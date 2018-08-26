@@ -13,7 +13,7 @@
         </div>
     </div>
     {# 对于多选题，需要将没有内容（label=''）的选项隐藏。因此，多选题传入的是field的list。其它题型传入的则是form。 #}
-    {% if form is undefined and blank_num is undefined %}
+    {% if question_type == '多选题' %}
         <form method="POST">
             {% for field in fields %}
                 {% if field.label.text =='' %}
@@ -28,7 +28,7 @@
             {% endfor %}
         </form>
 {#        对于填空题,隐藏多余的空格#}
-    {% elif blank_num is defined %}
+    {% elif question_type == '填空题' %}
         <form method="POST">
             {% for field in fields %}
                 {% if loop.index <= blank_num and field.type =='StringField' %}

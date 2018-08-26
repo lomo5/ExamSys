@@ -20,9 +20,11 @@ class ExerciseBeginForm(FlaskForm):
         super(ExerciseBeginForm, self).__init__(*args, **kwargs)
         self.subject.choices = [(subject.id, subject.subject_name) for subject in
                                 Subject.query.order_by(Subject.subject_name).all()]
-        self.question_type.choices = [(qtype.id, qtype.type_name) for qtype in
+        qt_ch_list = [(qtype.id, qtype.type_name) for qtype in
                                       QuestionType.query.order_by(QuestionType.type_name).all()]
-        # todo:后期加上随机题型的选项
+        qt_ch_list.append((0, '所有题型'))  # 表示不限定题型，随机选
+        self.question_type.choices = qt_ch_list
+
 
     # 以下是自己原来写的：
     # def __init__(self):
@@ -39,41 +41,6 @@ class ExerciseBeginForm(FlaskForm):
 # 注意：显示答案时，需要将用户的答案显示出来（选择题保持用户的选中状态，填空简答在文本框中显示用户的输入）正确答案另外显示。
 # 注意：
 
-
-# 一个包含所有题型所需field的form，渲染时根据每个field的label是否为空来判断是否显示（或根据传过来的题型），提交的时候不验证是否选了答案，没选就当做错。
-class ExercisesForm(FlaskForm):
-    # 单选
-    single = RadioField('请选择：', choices=None)
-    # 多选
-    multi1 = BooleanField('')
-    multi2 = BooleanField('')
-    multi3 = BooleanField('')
-    multi4 = BooleanField('')
-    multi5 = BooleanField('')
-    multi6 = BooleanField('')
-    multi7 = BooleanField('')
-    multi8 = BooleanField('')
-    # 判断
-    truefalse = RadioField('请选择：', choices=None)
-    # 填空，初始化时根据空格数动态生成
-    fill = []
-    # 简答
-    saq = TextAreaField(render_kw={"placeholder": "答案写在这里"})
-
-    def __init__(self, single_choises=None, multi_num=0, fill_num=0):
-        """
-        single_choises：单选题radiofield 的choices属性；
-        fill_num:填空题的空格数
-        multi_num:多选题的选项数
-            但是根据官方文档（https://wtforms.readthedocs.io/en/stable/fields.html#field-enclosures）的描述，FieldList不能包含（enclose） BooleanField 或 SubmitField 实例。
-            是否意味着BooleanField 和 SubmitField 不能动态创建？
-        todo:确定form中能否这样动态生成field！！！！
-        """
-        self.single = RadioField(choices=single_choises)  # 初始化单选题
-        for i in range(fill_num):  # 初始化填空题
-            self.fill.append(StringField())
-
-
 # 单选选择题的选项
 class ExerciseSingleForm(FlaskForm):
     # todo:初始选项(choices)为空，view中动态添加choices
@@ -81,10 +48,13 @@ class ExerciseSingleForm(FlaskForm):
     submit = SubmitField('提交')
 
     def __init__(self, *args, **kwargs):
-        # super(ExerciseSingleForm, self).__init__(*args, **kwargs)
-        answer_list = kwargs['question'].options.split('||')
-        alph = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']
-        self.answers.choices = list(zip(alph, answer_list))  # 超长对一个list将被截取
+        super(ExerciseSingleForm, self).__init__(*args, **kwargs)  # 不加这行会出AttributeError: 'ExerciseSingleForm' object has no attribute '_fields'告警
+        if len(kwargs) > 0:
+            answer_list = kwargs['question'].options.split('||')
+            alph = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']
+            for i in range(0, len(answer_list)):
+                answer_list[i] = alph[i] + '. ' + answer_list[i]
+            self.answers.choices = list(zip(alph, answer_list))  # 超长对一个list将被截取
 
 
 # 多选题的选项
@@ -94,7 +64,7 @@ class ExerciseMultiChoiceForm(FlaskForm):
     # multi = []
     # for i in range(0, 8):
     #     multi.append(BooleanField('', default=False))
-    multi0 = BooleanField('', default=False)
+
     multi1 = BooleanField('', default=False)
     multi2 = BooleanField('', default=False)
     multi3 = BooleanField('', default=False)
@@ -102,6 +72,7 @@ class ExerciseMultiChoiceForm(FlaskForm):
     multi5 = BooleanField('', default=False)
     multi6 = BooleanField('', default=False)
     multi7 = BooleanField('', default=False)
+    multi8 = BooleanField('', default=False)
 
     submit = SubmitField('提 交')
 
@@ -113,10 +84,10 @@ class ExerciseMultiChoiceForm(FlaskForm):
             opt_list = kwargs['question'].options.split('||')
             alph = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K']
             # ans_list = list(question.answer)  # 把"ABCD"形式的字符串拆成单个字母的list
-            for i in range(0, len(opt_list)):  # 为BooleanField添加label
+            for i in range(1, len(opt_list)+1):  # 为BooleanField添加label
                 # self.multi[i].label = alph[i] + '. ' + opt_list[i]
                 self['multi' + str(i)].label = Label(self['multi' + str(i)].id,
-                                                     alph[i] + '. ' + opt_list[i])  # 显示到页面之后通过控件id来修改label
+                                                     alph[i-1] + '. ' + opt_list[i-1])  # 显示到页面之后通过控件id来修改label
 
 
 # 填空题的空
@@ -143,7 +114,7 @@ class ExerciseAnswerForm(FlaskForm):
 
 # 判断
 class ExerciseTrueFalseForm(FlaskForm):
-    truefalse = RadioField('请选择：', choices=[(True, '对'), (False, '错')])
+    truefalse = RadioField('请选择：', choices=[('T', '对'), ('F', '错')])
     submit = SubmitField('提 交')
 
 

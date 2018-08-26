@@ -152,7 +152,7 @@ class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True, unique=True)
     question = db.Column(db.Text, nullable=False)  # 题干
     options = db.Column(db.Text, nullable=True)  # 选择题的备选答案，只有选择题有，是用"||"分割的字串
-    answer = db.Column(db.Text, nullable=False)  # 答案，选择题是ABCDEF，判断题是True/False，填空为||分割的文字，简答为答案文字
+    answer = db.Column(db.Text, nullable=False)  # 答案，选择题是ABCDEF，判断题是T/F，填空为||分割的文字，简答为答案文字
     pic_url = db.Column(db.Text, nullable=True)  # 关联图片链接
     add_time = db.Column(db.DateTime, default=datetime.utcnow)  # 添加时间
     info = db.Column(db.Text, nullable=True)  # 信息，比如试题出处之类

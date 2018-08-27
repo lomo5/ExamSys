@@ -39,88 +39,9 @@ def beginexerc():
         session['question_type'] = q_type_id  # 保存题型，0表示所有题型
         session.pop('before_id', None)
         session.pop('u_answer', None)
-        # session['current_q'] = 0  # 当前页面显示第几题（即当前题在q_ids中排第几个，用于前后翻页的情况）；0表示没有开始
-
-        # q_type_name = QuestionType.query.filter(QuestionType.id == q_type_id).first().type_name
-        # if q_type_name == "单选题":
-        #     return redirect(url_for('home.single'))
-        # elif q_type_name == "多选题":
-        #     return redirect(url_for('home.multi'))
-        # elif q_type_name == "填空题":
-        #     return redirect(url_for('home.filling'))
-        # elif q_type_name == "判断题":
-        #     return redirect(url_for('home.truefalse'))
-        # elif q_type_name == "简答题":
-        #     return redirect(url_for('home.jianda'))
 
         return redirect(url_for('home.exercises'))
     return render_template('home/beginexerc.html', form=form)
-
-
-# # 单选题
-# @home.route('/single', methods=['GET', 'POST'])
-# @login_required
-# def single():
-#     if 'subject_id' not in session or 'question_type' not in session:  # 如果session中没有subject_id，则返回选择科目页面
-#         flash('请先选择科目和题型！')
-#         return redirect(url_for('home.exercise'))
-#     if 'exercise_id' not in session:
-#         exerc_id = new_exercise()
-#         session['exercise_id'] = exerc_id
-#     # 取得当前的Exercise对象
-#     exerc = Exercise.query.filter(Exercise.id == session['exercise_id']).first()
-#     sub_id = session['subject_id']  # 取得当前科目id
-#     qtype = session['question_type']  # 取得当前问题类型
-#     if sub_id == '' or qtype == '':
-#         flash('请先选择科目和题型！')
-#         return redirect(url_for('home.exercise'))
-#
-#     # str_result = exerc.result_list  # 已经练过的问题的结果字串
-#     # result_list = list(str_result)  # 已经练过的问题的结果列表
-#
-#     q_next = random_question(exerc, sub_id, int(qtype))  # 生成一道随机题目
-#     if q_next is None:  # 如果是最后一道题,则清空session变量，返回科目选择页面
-#         flash('恭喜！本专业下此类题型所有题目均已练习完毕！')
-#         session.pop('exercise_id', None)
-#         session.pop('subject_id', None)
-#         session.pop('before_id', None)
-#         return redirect(url_for('home.exercise'))
-#     form = ExerciseSingleForm(question=q_next)
-#     a = form.validate_on_submit()
-#     b = form.is_submitted()
-#     if form.validate_on_submit() and "before_id" in session:
-#         q_id_before = int(session['before_id'])
-#
-#     session['before_id'] = str(q_next.id)
-#     return render_template('home/single.html')
-
-
-# # 多选题
-# @home.route('/multi', methods=['GET', 'POST'])
-# @login_required
-# def multi():
-#     return render_template('home/multi.html')
-#
-#
-# # 填空题
-# @home.route('/filling', methods=['GET', 'POST'])
-# @login_required
-# def filling():
-#     return render_template('home/filling.html')
-#
-#
-# # 判断题
-# @home.route('/truefalse', methods=['GET', 'POST'])
-# @login_required
-# def truefalse():
-#     return render_template('home/trueflase.html')
-#
-#
-# # 简答题
-# @home.route('/jianda', methods=['GET', 'POST'])
-# @login_required
-# def jianda():
-#     return render_template('home/jianda.html')
 
 
 # 题目显示页
@@ -136,7 +57,7 @@ def exercises():
     # 取得当前的Exercise对象
     exerc = Exercise.query.filter(Exercise.id == session['exercise_id']).first()
     sub_id = session['subject_id']  # 取得当前科目id
-    qtype = session['question_type']  # 取得当前问题类型。todo：用于指定特地题型的情况
+    qtype = session['question_type']  # 取得当前问题类型，即在beginexerc页面中选择的题型。
     if sub_id == '' or qtype == '':
         flash('请先选择科目和题型！')
         return redirect(url_for('home.beginexerc'))
@@ -146,11 +67,11 @@ def exercises():
         before_qtype_id = Question.query.filter(Question.id == before_id).first().qtype_id
         before_qtype_name = QuestionType.query.filter(QuestionType.id == before_qtype_id).first().type_name
     else:
-        before_id = ''  # todo: 上一题为空
+        before_id = ''
         before_qtype_id = ''
         before_qtype_name = ''
 
-    # str_result = exerc.result_list  # 已经练过的问题的结果字串
+    # 生成一个临时的傀儡form，以便form.is_submitied()可以通过此对象检查form提交状态。todo：方法太笨！！！
     if int(qtype) != 0:
         qtypename = QuestionType.query.filter(QuestionType.id == int(qtype)).first().type_name
     else:
@@ -167,19 +88,8 @@ def exercises():
     elif qtypename == '简答题':
         form = ExerciseAnswerForm()
 
-    # try:
+    # 取得request对象中的form列表。通过request来进行提交内容的检查。todo：不是好办法，直接使用request太麻烦，wtform应该有更好的办法。
     req_form = request.form
-    #     subm = req_form['submit']
-    le = len(req_form)
-    #     # sub_data = req_form.submit.data
-    #     #
-    #     # d_le = len(req_form.submit.data)
-    #     # r=request
-    #     # a = req_form.form['submit']
-    #     submited = le > 2  # (not req_form['submit'] is None) and req_form.submit.data == True
-    #
-    # except:
-    #     submited = False
 
     if form.is_submitted() and before_id != '':  # 判断request带POST数据，且数据符合表单定义要求
         # 点击了"提交"按钮。todo：接下来判断答案对错，如果答错，则显示正确答案
@@ -191,7 +101,7 @@ def exercises():
         # before_q_type = ''
         # before_q_options = ''
         try:
-            # 判断对错
+            # 判断用户答案对错。todo: 方法太笨，需改进。
             if before_qtype_name == '单选题':
                 if 'answers' in req_form:
                     u_answer = req_form['answers']
@@ -247,7 +157,7 @@ def exercises():
             correct = False
 
         # 更新Exercise表、Mistake表
-        update_exercises(before_id, exerc, correct)
+        update_exercises(before_id, exerc.id, correct)
         update_mistakes(before_id, current_user.id, correct)
 
         session['before_id'] = before_id
@@ -301,11 +211,11 @@ def exercises():
     if q_next_qtype_name == '填空题' or q_next_qtype_name == '多选题':
         for field in form:
             fields.append(field)
-            field.data=False
-    if q_next_qtype_name=='单选题':  # 清空选项
-        form.answers.data=None
-    if q_next_qtype_name=='判断题':
-        form.truefalse.data=None
+            field.data = False
+    if q_next_qtype_name == '单选题':  # 清空上一题留下的选项（通过session自动保存）
+        form.answers.data = None
+    if q_next_qtype_name == '判断题':
+        form.truefalse.data = None
 
     # 多选：为了在模版中将没有文字的选项隐藏，按field为单位来渲染并为包含其的<p>标签设置class="hide"来隐藏。其它题型则按整个form渲染。
     if isinstance(form, ExerciseMultiChoiceForm):
@@ -415,7 +325,8 @@ def random_question(exerc, s_id, qtypte_id=None):
     if len(q_over_list) > 0:  # 如果有已经做过的题，则需要从备选题列表中删去
         for q in q_over_list:  # 把已经联系过的题目去掉
             que = Question.query.filter(Question.id == q).first()
-            all_question.remove(que)
+            if que in all_question:
+                all_question.remove(que)
 
     if len(all_question) > 0:  # 如果未考题目列表中还有题目，则随即返回一道题目
         return random.choice(all_question)
@@ -443,6 +354,7 @@ def update_mistakes(before_id, user_id, correct):
     :param user_id, 用户id
     :param correct,是否正确
     """
+    m_list = Mistake.query.filter(Mistake.question_id == before_id).filter(Mistake.user_id == user_id).all()
     mis_count = len(
         Mistake.query.filter(Mistake.question_id == before_id).filter(Mistake.user_id == user_id).all())
     if correct:
@@ -462,20 +374,36 @@ def update_mistakes(before_id, user_id, correct):
             mis.user_id = user_id
             mis.question_id = before_id
             mis.wrong_times = 1
+            mis.correct_times = 0
         db.session.add(mis)
         db.session.commit()
 
 
-def update_exercises(before_id, exerc, correct):
+def update_exercises(before_id, ex_id, correct):
     """更新Exercise表
     :param before_id, 试题（question）id
     :param exerc, exercise对象
-    :param correct,是否正确
+    :param correct,是否正确,boolean
     """
-    exerc.result_list += ',' + before_id
-    if correct:
-        exerc.result_list += 'T'
-    else:
-        exerc.result_list += 'F'
-    db.session.add(exerc)
-    db.session.commit()
+
+    ex = Exercise.query.filter(Exercise.id==ex_id).first()
+    q_list = ex.question_list.split(',')
+    if before_id not in q_list:  # 入已经做过相同的题则不计入Exercise
+        if ex.result_list is None or ex.question_list is None or ex.result_list == '' or ex.question_list == '':
+            q_list_str = str(before_id)
+            if correct:
+                r_list_str = 'T'
+            else:
+                r_list_str = 'F'
+        else:
+            q_list_str = ex.question_list + ',' + str(before_id)
+            if correct:
+                r_list_str = ex.result_list + 'T'
+            else:
+                r_list_str = ex.result_list + 'F'
+
+        ex.result_list = r_list_str
+        ex.question_list = q_list_str
+        db.session.add(ex)
+        db.session.commit()
+

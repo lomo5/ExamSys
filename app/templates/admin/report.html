@@ -1,16 +1,49 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 
-{% block title %}调考系统 - 登录{% endblock %}
+{% block title %}统计报表{% endblock %}
 
 {% block page_content %}
-<div class="page-header">
-    <h1>登录</h1>
-</div>
-<div class="col-md-4">
-    {{ wtf.quick_form(form) }}
-    <br>
-    <p>忘记了密码？请联系管理员。</p>
-{#    <p>新用户？ <a href="{{ url_for('auth.register') }}">Click here to register</a>.</p>#}
-</div>
+    <div class="panel panel-default">
+        <div class="panel-heading">统计报表</div>
+        <div class="panel-body">
+            <div class="col-md-4">
+                {{ wtf.quick_form(form) }}
+            </div>
+        </div>
+
+
+        <div class="panel panel-default">
+{#            <div class="panel-heading">今日情况统计</div>#}
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th>部门</th>
+                    <th>人数</th>
+                    <th>今日做题人数</th>
+                    <th>今日做题量</th>
+                    <th>部门正确率</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% set row_style='info' %}
+                {% for row in table %}
+                    {% if row_style == 'warning' %}
+                        {% set row_style='info' %}
+                    {% else %}
+                        {% set row_style='warning' %}
+                    {% endif %}
+                    <tr class="{{ row_style }}">
+                        <td>{{ row[0] }}</td>
+                        <td>{{ row[1] }}</td>
+                        <td>{{ row[2] }}</td>
+                        <td>{{ row[3] }}</td>
+                        <td>{{ row[4] }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+
 {% endblock %}

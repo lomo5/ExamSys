@@ -1,7 +1,8 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField
-from wtforms.validators import DataRequired, Length, Email, Regexp, EqualTo
+from wtforms import StringField, PasswordField, SubmitField, SelectField
 from wtforms import ValidationError
+from wtforms.validators import DataRequired, Length, Email, EqualTo
+
 from ..models import User
 
 
@@ -31,5 +32,8 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('该工号已注册！')
 
 
-
-
+class AdminReport(FlaskForm):
+    """管理员报表"""
+    period = SelectField('统计周期', validators=[DataRequired()], choices=[('D', '今天'), ('W', '本周'), ('M', '本月')])
+    unit = SelectField('统计单位', validators=[DataRequired()], choices=[('department', '部门'), ('individual', '个人')])
+    submit = SubmitField('生成报表')

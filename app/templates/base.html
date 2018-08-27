@@ -25,8 +25,8 @@
                 <ul class="nav navbar-nav">
                     {% if current_user.is_authenticated %}
                         <li><a href="{{ url_for('home.beginexerc') }}">练习</a></li>
-                        <li><a href="{{ url_for('home.mistakes') }}">错题回顾</a></li>
-                        <li><a href="{{ url_for('home.statistic') }}">统计信息</a></li>
+{#                        <li><a href="{{ url_for('home.mistakes') }}">错题回顾</a></li>#}
+{#                        <li><a href="{{ url_for('home.statistic') }}">统计信息</a></li>#}
                         {% if current_user.role.role_name=='admin' %}
                             <li class="dropdown">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">
@@ -35,7 +35,7 @@
                                 <ul class="dropdown-menu">
 {#                                    <li><a href="{{ url_for('admin.question_manage') }}">题库管理</a></li>#}
 {#                                    <li><a href="{{ url_for('admin.paper_manage') }}">试卷管理</a></li>#}
-                                    <li><a href="{{ url_for('admin.user_manage') }}">用户管理</a></li>
+{#                                    <li><a href="{{ url_for('admin.user_manage') }}">用户管理</a></li>#}
                                     <li><a href="{{ url_for('admin.report') }}">统计报表</a></li>
                                 </ul>
                             </li>

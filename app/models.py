@@ -90,7 +90,8 @@ class User(UserMixin, db.Model):
     scores = db.relationship('Score', backref='user', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/成绩
     mistakes = db.relationship('Mistake', backref='user', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/错题
     # todo:默认每个用户都关联所有科目
-    exercises = db.relationship('Exercise', backref='user', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/练习（刷题）
+    exercises = db.relationship('Exercise', backref='user', lazy='dynamic',
+                                cascade='all, delete-orphan')  # 关系：一对多/练习（刷题）
     subjects = db.relationship('Subject',
                                secondary=usersubject,
                                backref=db.backref('subjects', lazy='dynamic'),
@@ -165,6 +166,7 @@ class Question(db.Model):
     def __repr__(self):
         return '<Question id:%r, add_time:%r>' % (self.id, self.add_time)
 
+
 # 放弃中间表的方式来关联Paper和Question，改用表示每道题分值的PaperQuestionScore模型（8月24日）
 # # 试卷、试题关联表
 # # 在多对多关系中，用来关联paper表和question表的helper表，我们不需要关心这张表，因为这张表将会由SQLAlchemy接管，
@@ -183,7 +185,7 @@ class PaperQuestionScore(db.Model):
     id = db.Column(db.Integer, primary_key=True, unique=True)
     pq_score = db.Column(db.Integer, nullable=False)  # 题目分值
     # 关系、外键：
-    paper_id= db.Column('paper_id', db.Integer, db.ForeignKey('papers.id'))
+    paper_id = db.Column('paper_id', db.Integer, db.ForeignKey('papers.id'))
     question_id = db.Column('question_id', db.Integer, db.ForeignKey('questions.id'))
 
 
@@ -196,14 +198,15 @@ class Paper(db.Model):
     create_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # 外键：创建用户id
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'))  # 外键：科目
     scores = db.relationship('Score', backref='paper', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/成绩
-    pq_scores = db.relationship('PaperQuestionScore', backref='paper', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/题目分值
-    # 放弃中间表的方式来关联Paper和Question，改用表示每道题分值的PaperQuestionScore模型（8月24日）
+    pq_scores = db.relationship('PaperQuestionScore', backref='paper', lazy='dynamic',
+                                cascade='all, delete-orphan')  # 关系：一对多/题目分值
+
+    # 放弃使用中间表的方式来关联Paper和Question，改用表示每道题分值的PaperQuestionScore模型（8月24日）
     # # paperquestion表由db.Table声明，我们不需要关心这张表，因为这张表将会由SQLAlchemy接管，
     # # 它唯一的作用是作为papers表和questions表关联表，所以必须在db.relationship()
     # # 中指出sencondary关联表参数。
     # questions = db.relationship('Question', secondary=paperquestion,
     #                             backref=db.backref('papers', lazy='dynamic'), lazy='dynamic')
-
 
     def __repr__(self):
         return '<Paper id:%r, add_time:%r>' % (self.id, self.add_time)
@@ -241,6 +244,7 @@ class Mistake(db.Model):
     question_id = db.Column(db.Integer, db.ForeignKey('questions.id'))  # 外键：试题id
     wrong_times = db.Column(db.Integer, default=1, nullable=False)  # 错误次数
     correct_times = db.Column(db.Integer, default=1, nullable=False)  # 第一次发生错误后，又做对的次数。
+
     # todo：Mistake.correct_times更新可能的性能问题：每个用户每做一题都要所描一遍这个表！！！
 
     def __repr__(self):
@@ -253,21 +257,10 @@ class Exercise(db.Model):
     Exercise：User，多对一
     采用这种方法（字串记录问题id）简化了表结构（可以少几个关系表），但是维护字串需要前台更多代码，且需要注意表变更不成功可能造成的问题！！！！！
     """
-    __tablename__='exercises'
+    __tablename__ = 'exercises'
     id = db.Column(db.Integer, primary_key=True, unique=True)
     begin_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=True)  # 开始刷题练习时间（点击"刷题"按钮开始计）
     question_list = db.Column(db.Text, nullable=True)  # 以","分隔的qquestion_id的列表，表示用户某次刷题的所有question
     result_list = db.Column(db.Text, nullable=True)  # "T"、"F"字母的列表，表示用户某次刷题的对错结果，"T"表示做对了，"F"表示该题做错了
     # 外键、关系
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 外键：用户id
-
-
-# class Exercise(db.Model):
-#     """刷题练习。每个用户对应多个exercise，每个exercise对应一个question(特定subject），最终每个用户通过exercise对应特定subject的所有question"""
-#     __tablename__='exercises'
-#     id = db.Column(db.Integer, primary_key=True)
-#     sn = db.Column(db.Integer, nullable=False)  # 题目序号
-#     # 关系、外键
-#     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # 外键：用户id
-#     question_id = db.Column(db.Integer, db.ForeignKey('questions.id'))
-#

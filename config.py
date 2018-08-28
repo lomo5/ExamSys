@@ -31,22 +31,22 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-        'mysql://root:root@localhost:8889/examsysdev'
+        'mysql://webuser:Webuser!234@10.0.0.9:3306/examsysdev'
     # 腾讯云数据库外网临时访问地址：xxxxxxxxxxxx.sql.tencentcdb.com:端口号   （本身就带端口号）
-    # 本机数据库：mysql://root:root@10.0.0.9:3306/examsysdev
+    # 本机数据库：mysql://webuser:Webuser!234@10.0.0.9:3306/examsysdev
     # mysql+pymysql://username:password@xxxxxxxxxxxxxxx.sql.tencentcdb.com:62978/examsysdev  todo:mysql和pymysql有啥区别？
 
 # 测试环境配置
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
-        'mysql://root:root@localhost:8889/examsystest'
+        'mysql://webuser:Webuser!234@10.0.0.9:3306/examsystest'
 
 
 # 生产环境配置
 class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'mysql://root:root@localhost:8889/examsys'
+        'mysql://webuser:Webuser!234@10.0.0.9:3306/examsys'
 
 
 config = {

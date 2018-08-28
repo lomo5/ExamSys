@@ -23,4 +23,4 @@
     6. 将创建的脚本纳入版本管理
     7. 升级数据库：(venv) $ flask db upgrade
     8. 如果在升级之前又做了改动，可以回退，然后删除就脚本，重新生成脚本（步骤4）：(venv) $ flask db downgrade
-
+    9. 

@@ -32,8 +32,9 @@ class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
         'mysql://root:root@localhost:8889/examsysdev'
-    # 腾讯云数据库外网临时访问地址：bj-cdb-9tbyx2xy.sql.tencentcdb.com:62978
+    # 腾讯云数据库外网临时访问地址：xxxxxxxxxxxx.sql.tencentcdb.com:端口号   （本身就带端口号）
     # 本机数据库：mysql://root:root@10.0.0.9:3306/examsysdev
+    # mysql+pymysql://username:password@xxxxxxxxxxxxxxx.sql.tencentcdb.com:62978/examsysdev  todo:mysql和pymysql有啥区别？
 
 # 测试环境配置
 class TestingConfig(Config):

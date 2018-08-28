@@ -211,7 +211,7 @@ def exercises():
     if q_next_qtype_name == '填空题' or q_next_qtype_name == '多选题':
         for field in form:
             fields.append(field)
-            field.data = False
+            field.data = None
     if q_next_qtype_name == '单选题':  # 清空上一题留下的选项（通过session自动保存）
         form.answers.data = None
     if q_next_qtype_name == '判断题':

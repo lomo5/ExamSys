@@ -27,7 +27,7 @@ class FillDb:
 
         try:
             sh = wbk.sheets()[0]  # 因为Excel里只有sheet1有数据，如果都有可以使用注释掉的语句
-            # sh = bk.sheet_by_name("benke.xlsx")
+            # sh = bk.sheet_by_name("xxxxx.xlsx")
         except:
             print("no sheet in %s named sheet1" % xls)
         else:

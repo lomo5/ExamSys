@@ -105,7 +105,7 @@ def report():
                     if has_exercised:
                         count_exe_user += 1
                 if count_q !=0 and count_t !=0:
-                    percent = round(count_t / count_q, 4) * 100  # todo:注意这里乘了100
+                    percent = round((count_t / count_q)*100, 2)  # 保留两位小数，todo:注意这里乘了100
                 else:
                     percent = 0
                 data.append([d_name, dept_user_count,count_exe_user, count_q, str(percent) + "%"])
@@ -116,7 +116,7 @@ def report():
                         count_q += len(exe.result_list)
                         count_t += exe.result_list.count('T')
                 if count_q !=0 and count_t !=0:
-                    percent = round(count_t / count_q, 4) * 100  # todo:注意这里乘了100
+                    percent = round((count_t / count_q)*100, 2)  # 保留两位小数，todo:注意这里乘了100
                 else:
                     percent = 0
                 data.append([d_user.department.department_name, d_user.username, count_q, str(percent) + "%"])

@@ -6,8 +6,8 @@ from wtforms.validators import DataRequired, Length, Email, EqualTo
 from ..models import User
 
 
-# 管理员创建新用户
-class RegistrationForm(FlaskForm):
+# 用户管理界面
+class UserManageForm(FlaskForm):
     staff_number = StringField('员工编号', validators=[DataRequired(), Length(1, 8)])
     email = StringField('邮箱', validators=[DataRequired(), Length(1, 64), Email()])
     username = StringField('姓名', validators=[DataRequired(), Length(1, 64)])

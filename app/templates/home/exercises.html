@@ -46,29 +46,4 @@
 {#        对于其他题型#}
         {{ wtf.quick_form(form) }}
     {% endif %}
-
-{#  todo:测试不再view中做处理，仅在模版中分析。未完成！！#}
-    {#    <form method="POST">#}
-    {#        {% set multi = False %}#}
-    {#        {% for field in form %}#}
-    {#            {% if field.type == 'BooleanField' %}#}
-    {#                {% set multi=True %}#}
-    {#            {% endif %}#}
-    {#        {% endfor %}#}
-    {#        {% if multi %}#}
-    {#            {% for field in form. %}#}
-    {#                {% if field.type == 'BooleanField' %}#}
-    {#                    {% if field.label.text =='' %}#}
-    {#                        <div class="hide"><p>{{ field(class="hide") }}</p></div>#}
-    {#                    {% else %}#}
-    {#                        <p>{{ field }}{{ field.label }}</p>#}
-    {#                    {% endif %}#}
-    {#                {% else %}#}
-    {#                    <p>{{ field }}</p>#}
-    {#                {% endif %}#}
-    {#            {% endfor %}#}
-    {#        {% else %}#}
-    {#            {{ wtf.quick_form(form) }}#}
-    {#        {% endif %}#}
-    {#    </form>#}
 {% endblock %}

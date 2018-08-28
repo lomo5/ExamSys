@@ -6,7 +6,7 @@ from flask import render_template, redirect, url_for, make_response, send_file
 from flask_login import login_required, current_user
 
 from . import admin
-from .forms import RegistrationForm, AdminReport
+from .forms import AdminReport, UserManageForm
 from ..models import User, Department, Exercise
 import os
 
@@ -16,34 +16,36 @@ import os
 @admin.route('/')
 @login_required
 def index():
-    form = RegistrationForm()
+    form = UserManageForm()
     return render_template('admin/report.html', form)
 
 
 @admin.route('/question_manage')
 @login_required
 def question_manage():
-    form = RegistrationForm()
+    form = UserManageForm()
     return render_template('admin/report.html', form)
 
 
 @admin.route('/paper_manage')
 @login_required
 def paper_manage():
-    form = RegistrationForm()
+    form = UserManageForm()
     return render_template('admin/report.html', form)
 
 
-@admin.route('/user_manage')
+@admin.route('/user_manage', methods=['GET', 'POST'])
 @login_required
 def user_manage():
-    form = RegistrationForm()
-    return render_template('admin/report.html', form)
+    form = UserManageForm()
+    return render_template('admin/usermanage.html', form)
 
 
 @admin.route('/report', methods=['GET', 'POST'])
 @login_required
 def report():
+    """统计报表
+    """
     if current_user.role.id != 1:
         redirect(url_for('home.index'))
 

@@ -99,7 +99,7 @@ class DeleteUserForm(FlaskForm):
             raise ValidationError('该用户名与工号不匹配！')
 
     def validate_department_delete(self, field):
-        users = User.query.filter(User.staff_number==field.data, User.department_id==int(self.department_delete.data)).all()
+        users = User.query.filter(User.staff_number==self.staff_number_delete.data, User.department_id==int(field.data)).all()
         if len(users) == 0:
             raise ValidationError('所选部门无法找到该工号！')
 

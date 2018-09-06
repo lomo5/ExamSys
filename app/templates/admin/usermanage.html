@@ -4,13 +4,66 @@
 {% block title %}调考系统 - 用户管理{% endblock %}
 
 {% block page_content %}
-<div class="page-header">
-    <h1>用户管理</h1>
-</div>
-<div class="col-md-4">
-    {{ wtf.quick_form(form) }}
-    <br>
-    <p>忘记了密码？请联系管理员。</p>
-{#    <p>新用户？ <a href="{{ url_for('auth.register') }}">Click here to register</a>.</p>#}
-</div>
+    {% set act_nav1 = '' %}
+    {% set act_body1 = '' %}
+    {% set act_nav2 = '' %}
+    {% set act_body2 = '' %}
+    {% set act_nav3 = '' %}
+    {% set act_body3 = '' %}
+    {% set act_nav4 = '' %}
+    {% set act_body4 = '' %}
+{#    根据act_tab的值来选择当前tab#}
+    {% if act_tab == 'password' or act_tab=='default' %}
+        {% set act_nav1 = 'class=active' %}
+        {% set act_body1 = 'in active' %}
+    {% else %}
+        {% if act_tab == 'newuser' %}
+            {% set act_nav2 = 'class=active' %}
+            {% set act_body2 = 'in active' %}
+        {% else %}
+            {% if act_tab == 'delete' %}
+                {% set act_nav3 = 'class=active' %}
+                {% set act_body3 = 'in active' %}
+            {% else %}
+                {% if act_tab == 'modify' %}
+                    {% set act_nav4 = 'class=active' %}
+                    {% set act_body4 = 'in active' %}
+                {% endif %}
+            {% endif %}
+        {% endif %}
+    {% endif %}
+
+    <div class="page-header">
+        <h1>用户管理</h1>
+    </div>
+    <div class="col-md-6">
+        <ul id="myTab" class="nav nav-tabs">
+            <li {{ act_nav1 }}><a href="#password" data-toggle="tab">修改密码</a></li>
+            <li {{ act_nav2 }}><a href="#newuser" data-toggle="tab">新增用户</a></li>
+            <li {{ act_nav3 }}><a href="#delete" data-toggle="tab">删除用户</a></li>
+            <li {{ act_nav4 }}><a href="#modify" data-toggle="tab">修改信息</a></li>
+        </ul>
+        <div id="myTabContent" class="tab-content">
+            <div class="tab-pane fade {{ act_body1 }}"  id="password">
+                {{ wtf.quick_form(form_pwd) }}
+            </div>
+            <div class="tab-pane fade {{ act_body2 }}"  id="newuser">
+                {{ wtf.quick_form(form_newuser) }}
+            </div>
+            <div class="tab-pane fade {{ act_body3 }}" id="delete">
+                {{ wtf.quick_form(form_del) }}
+            </div>
+            <div class="tab-pane fade {{ act_body4 }}" id="modify">
+                {{ wtf.quick_form(form_mod) }}
+            </div>
+        </div>
+    </div>
+
+
+    {#<div class="col-md-4">#}
+    {#    {{ wtf.quick_form(form) }}#}
+    {#    <br>#}
+    {#    <p>忘记了密码？请联系管理员。</p>#}
+    {#    <p>新用户？ <a href="{{ url_for('auth.register') }}">Click here to register</a>.</p>#}
+    {#</div>#}
 {% endblock %}

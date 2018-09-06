@@ -89,7 +89,7 @@ class User(UserMixin, db.Model):
     created_papers = db.relationship('Paper', backref='create_user', lazy='dynamic')  # 关系：一对多/该用户创建的试卷
     scores = db.relationship('Score', backref='user', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/成绩
     mistakes = db.relationship('Mistake', backref='user', lazy='dynamic', cascade='all, delete-orphan')  # 关系：一对多/错题
-    # todo:默认每个用户都关联所有科目
+    # 默认每个用户都关联所有科目
     exercises = db.relationship('Exercise', backref='user', lazy='dynamic',
                                 cascade='all, delete-orphan')  # 关系：一对多/练习（刷题）
     subjects = db.relationship('Subject',
@@ -132,7 +132,7 @@ class QuestionType(db.Model):
     __tablename__ = 'question_types'
     id = db.Column(db.Integer, primary_key=True, unique=True)
     # 题型：单选:SINGLE、多选MULTI、判断题TF、填空题（有序填空ORDERFILL/无序填空FILL）、简答SAQ（short answer question）
-    # todo:表中的题型名称使用中文！
+    # 表中的题型名称使用中文！
     type_name = db.Column(db.String(100), nullable=False, unique=True)
     # 关系、外键：
     questions = db.relationship('Question', backref='question_type', lazy='dynamic')  # 关系：一对多/试题

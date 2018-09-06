@@ -46,7 +46,7 @@ def change_password():
     if form.validate_on_submit():
         if current_user.verify_password(form.old_password.data):
             current_user.password = form.password.data
-            db.session.add(current_user)
+            # db.session.add(current_user)
             db.session.commit()
             flash('您的密码已修改。')
             return redirect(url_for('home.index'))

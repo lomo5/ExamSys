@@ -1,10 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
 
-</body>
-</html>
+{% block title %}统计信息{% endblock %}
+
+{% block page_content %}
+    <div class="panel panel-default">
+        <div class="panel-heading">统计信息</div>
+{#        <div class="panel-body">#}
+{#            <div class="col-md-4">#}
+{#                {{ wtf.quick_form(form) }}#}
+{#            </div>#}
+{#        </div>#}
+
+
+        <div class="panel panel-default">
+{#            <div class="panel-heading">今日情况统计</div>#}
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th>时间</th>
+                    <th>做题量</th>
+                    <th>正确数</th>
+                    <th>正确率</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% set row_style='info' %}
+                {% for row in table %}
+                    {% if row_style == 'warning' %}
+                        {% set row_style='info' %}
+                    {% else %}
+                        {% set row_style='warning' %}
+                    {% endif %}
+                    <tr class="{{ row_style }}">
+                        <td>{{ row[0] }}</td>
+                        <td>{{ row[1] }}</td>
+                        <td>{{ row[2] }}</td>
+                        <td>{{ row[3] }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}
+

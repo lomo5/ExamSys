@@ -1,5 +1,5 @@
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import render_template, redirect, url_for, flash, session, request
 from flask_login import login_required, current_user
@@ -8,15 +8,13 @@ from . import home  # 导入blueprint
 from .forms import ExerciseBeginForm, ExerciseSingleForm, ExerciseTrueFalseForm, ExerciseMultiChoiceForm, \
     ExerciseFillForm, ExerciseAnswerForm, ExerciseNextQuestionForm
 from .. import db
-from ..models import Question, Exercise, QuestionType, Mistake
-
-QUESTIONTYPES = [('填空题', 'hoem')]
+from ..models import Question, Exercise, QuestionType, Mistake, Subject, User
 
 
 # [(qt.id, qt.type_name) for qt in QuestionType.query.order_by(QuestionType.id).all()]
 
 # 主页
-@home.route('/', methods=['GET', 'POST'])
+@home.route('/', methods=['GET', 'POST'])  # 如果methods没有指定，则视图函数只接收GET请求
 def index():
     if current_user.is_authenticated:
         return render_template('home/index.html')
@@ -202,7 +200,6 @@ def exercises():
         return redirect(url_for('home.exercise'))
 
     q_context = q_next.question  # 题干
-    # todo: 显示下一题；所有题目答完的判断；如果session中题目列表为空，则生成所有题目的随机顺序id列表
     # exerc.question_list += str(q_next.id) 去掉，在点击submit提交后再插入exercise表
 
     session['before_id'] = str(q_next.id)
@@ -212,7 +209,7 @@ def exercises():
         for field in form:
             fields.append(field)
             field.data = None
-    if q_next_qtype_name == '单选题':  # 清空上一题留下的选项（通过session自动保存）
+    if q_next_qtype_name == '单选题':  # 清空上一题留下的保存在session中等选项值（通过session自动保存）
         form.answers.data = None
     if q_next_qtype_name == '判断题':
         form.truefalse.data = None
@@ -275,7 +272,48 @@ def answer():
 @home.route('/statistic', methods=['GET', 'POST'])
 @login_required
 def statistic():
-    return render_template('home/examine.html')
+    # 获取页面表格参数
+    table = []  # 页面表格内容.行：统计周期（今天、本周、本月）、做题数量、错题数、正确率
+    before = (datetime.utcnow() + timedelta(days=-1))  # 注 意：系统中时间均采用UTC时间！！！
+    duration = '今天'
+    q_count = 0
+    r_count = 0
+    for exe in Exercise.query.filter(Exercise.user_id==current_user.id, Exercise.begin_time>before).all():
+        q_count += len(exe.result_list)
+        r_count += exe.result_list.count('T')
+    if q_count != 0 and r_count != 0:
+        percent = round(r_count / q_count, 4) * 100  # 正确率。注意：这里乘了100
+    else:
+        percent = 0
+    table.append([duration, q_count, r_count, str(percent) + "%"])
+
+    duration = '本周'
+    before = (datetime.utcnow() + timedelta(days=-7))  # 注 意：系统中时间均采用UTC时间！！！
+    q_count = 0
+    r_count = 0
+    for exe in Exercise.query.filter(Exercise.user_id==current_user.id, Exercise.begin_time>before).all():
+        q_count += len(exe.result_list)
+        r_count += exe.result_list.count('T')
+    if q_count != 0 and r_count != 0:
+        percent = round(r_count / q_count, 4) * 100  # 正确率。注意：这里乘了100
+    else:
+        percent = 0
+    table.append([duration, q_count, r_count, str(percent) + "%"])
+
+    duration = '本月'
+    before = (datetime.utcnow() + timedelta(days=-30))  # 注 意：系统中时间均采用UTC时间！！！
+    q_count = 0
+    r_count = 0
+    for exe in Exercise.query.filter(Exercise.user_id==current_user.id, Exercise.begin_time>before).all():
+        q_count += len(exe.result_list)
+        r_count += exe.result_list.count('T')
+    if q_count != 0 and r_count != 0:
+        percent = round(r_count / q_count, 4) * 100  # 正确率。注意：这里乘了100
+    else:
+        percent = 0
+    table.append([duration, q_count, r_count, str(percent) + "%"])
+
+    return render_template('home/statistics.html', table=table)
 
 
 # 错题回顾

@@ -5,7 +5,7 @@ from wtforms.validators import DataRequired
 from ..models import Subject, QuestionType
 
 
-# todo: 点击提交后如果验证通过，则转到答题页面，同时将subject存入session
+# 点击提交后如果验证通过，则转到答题页面，同时将subject等变量存入session
 # 开始练习
 class ExerciseBeginForm(FlaskForm):
     #
@@ -35,15 +35,14 @@ class ExerciseBeginForm(FlaskForm):
     #     self.subject = SelectField('选择专业', choices=resp_list)
 
 
-# todo:开始答题后分两步：
+# 始答题后分两步：
 # 1、显示试题和"提交"按钮；如果
-# 2、提交后根据对错来决定下一步是显示答案还是继续下一题（继续的话flash显示正确）；同时将答过的题存入session中的一个list中，如果做错则存入错题表中（同时将改错题的错误次数加1）
-# 注意：显示答案时，需要将用户的答案显示出来（选择题保持用户的选中状态，填空简答在文本框中显示用户的输入）正确答案另外显示。
-# 注意：
+# 2、提交后根据对错来决定下一步是显示答案还是继续下一题（继续的话flash显示正确）；
+# 同时将答过的题存入Exercise表中，如果做错则存入错题表中（同时将错题的错误次数加1）
 
 # 单选选择题的选项
 class ExerciseSingleForm(FlaskForm):
-    # todo:初始选项(choices)为空，view中动态添加choices
+    # 初始化时添加choices
     answers = RadioField('请选择：', choices=None, validators=[DataRequired()])
     submit = SubmitField('提交')
 
@@ -59,8 +58,7 @@ class ExerciseSingleForm(FlaskForm):
 
 # 多选题的选项
 class ExerciseMultiChoiceForm(FlaskForm):
-    # todo:view中设置每个checkbox的label，template中通过判断label是否为空来决定是否显示某个选项；label前可加上A、B、C、D
-    # todo:如何验证用户有没有做选择？至少选中一项
+    # :view中设置每个checkbox的label，template中通过判断label是否为空来决定是否显示某个选项；__init__函数在label前可加上A、B、C、D
     # multi = []
     # for i in range(0, 8):
     #     multi.append(BooleanField('', default=False))
@@ -93,7 +91,7 @@ class ExerciseMultiChoiceForm(FlaskForm):
 # 填空题的空
 class ExerciseFillForm(FlaskForm):
     # fill = []
-    # for i in range(0, 8):  # 定义8个StringField。todo：简单起见，不管空格有没有8个都显示8个空。回头再改！！
+    # for i in range(0, 8):  # 定义8个StringField。模版中判断显示与否！！
     #     fill.append(StringField())
     fill1 = StringField()
     fill2 = StringField()

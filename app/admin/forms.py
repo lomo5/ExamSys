@@ -3,33 +3,132 @@ from wtforms import StringField, PasswordField, SubmitField, SelectField
 from wtforms import ValidationError
 from wtforms.validators import DataRequired, Length, Email, EqualTo
 
-from ..models import User
+from ..models import User, Department, Role
 
 
-# 用户管理界面
-class UserManageForm(FlaskForm):
-    staff_number = StringField('员工编号', validators=[DataRequired(), Length(1, 8)])
-    email = StringField('邮箱', validators=[DataRequired(), Length(1, 64), Email()])
-    username = StringField('姓名', validators=[DataRequired(), Length(1, 64)])
-    department = SelectField('部门', validators=[DataRequired()])
-    role = SelectField('角色', validators=[DataRequired()])
-    password = PasswordField('密码', validators=[DataRequired(),
-                                               EqualTo('password2', message='两次输入的密码必须相同。')])
-    password2 = PasswordField('确认密码', validators=[DataRequired()])
-    submit = SubmitField('注册')
+class AddUserForm(FlaskForm):
+    """新增用户Form"""
+    staff_number_add = StringField('员工编号', validators=[DataRequired(), Length(1, 8)])
+    email_add = StringField('邮箱', validators=[DataRequired(), Length(1, 64), Email()])
+    username_add = StringField('姓名', validators=[DataRequired(), Length(1, 64)])
+    # coerce，参考：https://stackoverflow.com/questions/13964152/not-a-valid-choice-for-dynamic-select-field-wtforms
+    department_add = SelectField('部门', coerce=int, validators=[DataRequired()])
+    role_add = SelectField('角色', coerce=int, validators=[DataRequired()])
+    password_add = PasswordField('密码', validators=[DataRequired(),
+                                                   EqualTo('password2_add', message='两次输入的密码必须相同。')])
+    password2_add = PasswordField('确认密码', validators=[DataRequired()])
+    submit_add = SubmitField('新增用户')
 
     # 如果表单类中定义了以 validate_ 开头且后面跟着字段名的方法，这个方法就和常规的验证函数一起调用。
-    def validate_email(self, field):
+    def validate_email_add(self, field):
         if User.query.filter_by(email=field.data).first():
             raise ValidationError('该邮箱已注册！')
 
-    def validate_username(self, field):
+    def validate_username_add(self, field):
         if User.query.filter_by(username=field.data).first():
             raise ValidationError('该用户名已被占用！')
 
-    def validate_staff_number(self, field):
+    def validate_staff_number_add(self, field):
         if User.query.filter_by(staff_number=field.data).first():
             raise ValidationError('该工号已注册！')
+
+    # 在初始化Form实例时指定selectField的choices内容。参考：https://blog.csdn.net/agmcs/article/details/45308431
+    def __init__(self, *args, **kwargs):
+        super(AddUserForm, self).__init__(*args, **kwargs)
+        self.department_add.choices = [(department.id, department.department_name) for department in
+                                       Department.query.order_by(Department.department_name).all()]
+        self.role_add.choices = [(role.id, role.role_name) for role in Role.query.order_by(Role.role_name).all()]
+
+
+class ModifyUserForm(FlaskForm):
+    """修改用户信息"""
+    staff_number_modify = StringField('员工编号', validators=[DataRequired(), Length(1, 8)])
+    username_modify = StringField('姓名', validators=[DataRequired(), Length(1, 64)])
+    email_modify = StringField('邮箱', validators=[DataRequired(), Length(1, 64), Email()])
+    department_modify = SelectField('部门', coerce=int, validators=[DataRequired()])
+    role_modify = SelectField('角色', coerce=int , validators=[DataRequired()])
+    submit_modify = SubmitField('修改信息')
+
+    # 如果表单类中定义了以 validate_ 开头且后面跟着字段名的方法，这个方法就和常规的验证函数一起调用。
+    def vlidate_staff_number_modify(self, field):
+        user = User.query.filter_by(staff_id=field.data).first()
+        if user is None:
+            raise ValidationError('该用户名不存在！')
+
+    def validate_email_modify(self, field):
+        if User.query.filter(User.email==field.data, User.staff_number != self.staff_number_modify.data).first():
+            raise ValidationError('该邮箱已被占用！')
+
+    def validate_username_modify(self, field):
+        user = User.query.filter_by(username=field.data).first()
+        if user is None:
+            raise ValidationError('该用户名不存在！')
+        if user.staff_number != self.staff_number_modify.data:
+            raise ValidationError('该用户名与工号不匹配！')
+
+    # 在初始化Form实例时指定selectField的choices内容。参考：https://blog.csdn.net/agmcs/article/details/45308431
+    def __init__(self, *args, **kwargs):
+        super(ModifyUserForm, self).__init__(*args, **kwargs)
+        self.department_modify.choices = [(department.id, department.department_name) for department in
+                                          Department.query.order_by(Department.department_name).all()]
+        self.role_modify.choices = [(role.id, role.role_name) for role in Role.query.order_by(Role.role_name).all()]
+
+
+class DeleteUserForm(FlaskForm):
+    """删除用户"""
+    staff_number_delete = StringField('员工编号', validators=[DataRequired(), Length(1, 8)])
+    username_delete = StringField('姓名', validators=[DataRequired(), Length(1, 64)])
+    department_delete = SelectField('部门', coerce=int, validators=[DataRequired()])
+    submit_delete = SubmitField('删除员工')
+
+    # 如果表单类中定义了以 validate_ 开头且后面跟着字段名的方法，这个方法就和常规的验证函数一起调用。
+    def validate_staff_number_delete(self, field):
+        user = User.query.filter_by(staff_number=field.data).first()
+        if user is None:
+            raise ValidationError('该用户名不存在！')
+        if field.data == '11111111':
+            raise ValidationError('该工号为管理员，不能删除！')
+
+    def validate_username_delete(self, field):
+        user = User.query.filter_by(username=field.data).first()
+        if user is None:
+            raise ValidationError('该用户名不存在！')
+        if field.data == 'admin':
+            raise ValidationError('admin管理员为超级用户，不能删除！')
+        if user.staff_number != self.staff_number_delete.data:
+            raise ValidationError('该用户名与工号不匹配！')
+
+    def validate_department_delete(self, field):
+        users = User.query.filter(User.staff_number==field.data, User.department_id==int(self.department_delete.data)).all()
+        if len(users) == 0:
+            raise ValidationError('所选部门无法找到该工号！')
+
+    # 在初始化Form实例时指定selectField的choices内容。参考：https://blog.csdn.net/agmcs/article/details/45308431
+    def __init__(self, *args, **kwargs):
+        super(DeleteUserForm, self).__init__(*args, **kwargs)
+        self.department_delete.choices = [(department.id, department.department_name) for department in
+                                       Department.query.order_by(Department.department_name).all()]
+
+
+class ChangePwdForm(FlaskForm):
+    """修改密码"""
+    staff_number_change = StringField('员工编号', validators=[DataRequired(), Length(1, 8)])
+    username_change = StringField('姓名', validators=[DataRequired(), Length(1, 64)])
+    password_change = PasswordField('密码', validators=[DataRequired(),
+                                                      EqualTo('password2_change', message='两次输入的密码必须相同。')])
+    password2_change = PasswordField('确认密码', validators=[DataRequired()])
+    submit_change = SubmitField('修改密码')
+
+    # 如果表单类中定义了以 validate_ 开头且后面跟着字段名的方法，这个方法就和常规的验证函数一起调用。
+    def validate_staff_number_change(self, field):
+        if not User.query.filter_by(staff_number=field.data).first():
+            raise ValidationError('该工号不存在！')
+
+    def validate_username_change(self, field):
+        if not User.query.filter_by(username=field.data).first():
+            raise ValidationError('该用户名不存在！')
+        if User.query.filter_by(username=field.data).first().staff_number != self.staff_number_change.data:
+            raise ValidationError('用户名与工号不匹配！')
 
 
 class AdminReport(FlaskForm):

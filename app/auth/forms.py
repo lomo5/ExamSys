@@ -34,7 +34,7 @@ class LoginForm(FlaskForm):
 
 
 class ChangePasswordForm(FlaskForm):
-    staff_number = StringField('员工编号', validators=[DataRequired(), Length(1, 8)])
+    # staff_number = StringField('员工编号', validators=[DataRequired(), Length(1, 8)])
     old_password = PasswordField('原密码', validators=[DataRequired()])
     password = PasswordField('新密码', validators=[
         DataRequired(), EqualTo('password2', message='两次输入的密码必须相同。')])

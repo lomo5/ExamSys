@@ -177,10 +177,6 @@ def report():
             filename += '_individual.xls'
         data = tablib.Dataset(headers=headers)
 
-        d_name = ''  # 部门名称
-        count_q = 0  # 做题数量
-        count_t = 0  # 正确数
-        percent = 0  # 正确率
         if unit == 'department':
             for dept in Department.query.all():
                 d_name = dept.department_name
@@ -205,7 +201,7 @@ def report():
                 data.append([d_name, dept_user_count, count_exe_user, count_q, str(percent) + "%"])
         elif unit == 'individual':
             for d_user in User.query.all():
-                count_q =0
+                count_q = 0
                 count_t = 0
                 for exe in Exercise.query.filter(Exercise.user_id == d_user.id).all():
                     if exe.begin_time > before:

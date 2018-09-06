@@ -215,7 +215,7 @@ def report():
 
         open(filename, 'wb').write(data.xls)
 
-        response = make_response(send_file("../" + filename))
+        response = make_response(send_file("../../" + filename))
         response.headers["Content-Disposition"] = "attachment; filename=" + filename
         # todo：文件名是中文会出编码错误告警：
         # UnicodeEncodeError: 'latin-1' codec can't encode characters in position 42-46: ordinal not in range(256)

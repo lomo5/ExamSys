@@ -31,7 +31,7 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-        'mysql://webuser:Webuser!234@10.0.0.9:3306/examsysdev'
+        'mysql://root:root@localhost:8889/examsysdev'
     # 腾讯云数据库外网临时访问地址：xxxxxxxxxxxx.sql.tencentcdb.com:端口号   （本身就带端口号）
     # 本机数据库：mysql://webuser:Webuser!234@10.0.0.9:3306/examsysdev
     # 本机数据库：mysql://root:root@localhost:8889/examsysdev

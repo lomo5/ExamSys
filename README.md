@@ -23,4 +23,10 @@
     6. 将创建的脚本纳入版本管理
     7. 升级数据库：(venv) $ flask db upgrade
     8. 如果在升级之前又做了改动，可以回退，然后删除就脚本，重新生成脚本（步骤4）：(venv) $ flask db downgrade
-    9. 
+    9. 问题：本地调试的时候，由于没有uwsgi做代理，当前目录即为项目根目录。写文件会写到项目根目录下。上传腾讯云后，写目录变成了/home/www/examsys，此时再用send_file("../" + filename)就会提示文件不存在（uwsgi的log中）
+        1. 这是由于：上传到腾讯云后，uwsgi配置文件没有指定项目根目录，默认将是uwsgi的启动目录。这就使运行时，默认当前目录变成了/home/www/examsys,而不是/home/www/examsys/ExamSys
+        2. 解决办法：需要在uwsgi的配置文件中添加chdir变量，将当前目录指定为：/home/www/examsys/ExamSys
+    10. 下载文件名中文支持：通过将filename编码转为latin-1（server.py里边会严格按照latin-1编码来解析filename），将utf8编码的中文文件名默认转为latin-1编码文件名。
+        1. response.headers["Content-Disposition"] = "attachment; filename={}".format(filename.encode().decode('latin-1'))
+        2. 参考：https://stackoverflow.com/questions/47575665/flask-raises-unicodeencodeerror-latin-1-when-send-attachment-with-utf-8-charac
+

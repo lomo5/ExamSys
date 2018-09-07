@@ -221,8 +221,6 @@ def report():
         response = make_response(send_file("../" + filename))
         # 文件名中文支持：通过将filename编码转为latin-1（server.py里边会严格按照latin-1编码来解析filename），将utf8编码的中文文件名默认转为latin-1编码文件名。
         response.headers["Content-Disposition"] = "attachment; filename={}".format(filename.encode().decode('latin-1'))
-        # UnicodeEncodeError: 'latin-1' codec can't encode characters in position 42-46: ordinal not in range(256)
-        # 参考：https://stackoverflow.com/questions/47575665/flask-raises-unicodeencodeerror-latin-1-when-send-attachment-with-utf-8-charac
 
         return response
 

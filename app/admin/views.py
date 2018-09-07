@@ -158,23 +158,23 @@ def report():
         before = datetime.utcnow()
         if period == 'D':
             before = day_before
-            filename += 'day_report'
+            filename += '24小时统计'
             header_str = '今日做题人数'
         elif period == 'W':
             before = week_before
-            filename += 'week_report'
+            filename += '本周统计'
             header_str = '本周做题人数'
         elif period == 'M':
             before = month_before
-            filename += 'month_report'
+            filename += '本月统计'
             header_str = '本月做题人数'
 
         if unit == 'department':
             headers = (u"部门", u"部门人数", header_str, u"做题数量", u"正确率")
-            filename += '_department.xls'
+            filename += '_部门.xls'
         elif unit == 'individual':
             headers = (u"部门", u"姓名", u"做题数量", u"正确率")
-            filename += '_individual.xls'
+            filename += '_个人.xls'
         data = tablib.Dataset(headers=headers)
 
         if unit == 'department':
@@ -215,12 +215,12 @@ def report():
 
         open(filename, 'wb').write(data.xls)
 
-        # 本地调试的时候，由于没有uwsgi做代理，当前目录即为项目根目录。写文件会写到项目根目录下。上传腾讯云后，写目录变成了/home/www/examsys，此时再用send_file("../" + filename)就会提示文件不存在（uwsgi的log中）
-        # 这是由于：上传到腾讯云后，uwsgi配置文件没有指定当前目录，默认将是uwsgi的启动目录。这就使运行时，默认当前目录变成了/home/www/examsys,而不是/home/www/examsys/ExamSys
+        # 问题：本地调试的时候，由于没有uwsgi做代理，当前目录即为项目根目录。写文件会写到项目根目录下。上传腾讯云后，写目录变成了/home/www/examsys，此时再用send_file("../" + filename)就会提示文件不存在（uwsgi的log中）
+        # 这是由于：上传到腾讯云后，uwsgi配置文件没有指定项目根目录，默认将是uwsgi的启动目录。这就使运行时，默认当前目录变成了/home/www/examsys,而不是/home/www/examsys/ExamSys
         # 解决办法：需要在uwsgi的配置文件中添加chdir变量，将当前目录指定为：/home/www/examsys/ExamSys
         response = make_response(send_file("../" + filename))
-        response.headers["Content-Disposition"] = "attachment; filename=" + filename
-        # todo：文件名是中文会出编码错误告警：
+        # 文件名中文支持：通过将filename编码转为latin-1（server.py里边会严格按照latin-1编码来解析filename），将utf8编码的中文文件名默认转为latin-1编码文件名。
+        response.headers["Content-Disposition"] = "attachment; filename={}".format(filename.encode().decode('latin-1'))
         # UnicodeEncodeError: 'latin-1' codec can't encode characters in position 42-46: ordinal not in range(256)
         # 参考：https://stackoverflow.com/questions/47575665/flask-raises-unicodeencodeerror-latin-1-when-send-attachment-with-utf-8-charac
 

@@ -215,7 +215,10 @@ def report():
 
         open(filename, 'wb').write(data.xls)
 
-        response = make_response(send_file("../../" + filename))
+        # 本地调试的时候，由于没有uwsgi做代理，当前目录即为项目根目录。写文件会写到项目根目录下。上传腾讯云后，写目录变成了/home/www/examsys，此时再用send_file("../" + filename)就会提示文件不存在（uwsgi的log中）
+        # 这是由于：上传到腾讯云后，uwsgi配置文件没有指定当前目录，默认将是uwsgi的启动目录。这就使运行时，默认当前目录变成了/home/www/examsys,而不是/home/www/examsys/ExamSys
+        # 解决办法：需要在uwsgi的配置文件中添加chdir变量，将当前目录指定为：/home/www/examsys/ExamSys
+        response = make_response(send_file("../" + filename))
         response.headers["Content-Disposition"] = "attachment; filename=" + filename
         # todo：文件名是中文会出编码错误告警：
         # UnicodeEncodeError: 'latin-1' codec can't encode characters in position 42-46: ordinal not in range(256)
@@ -247,6 +250,6 @@ def report():
             percent = round(count_t / count_q, 4) * 100  # 正确率。注意：这里乘了100
         else:
             percent = 0
-        table.append([d_name, dept_user_count, cout_exe_u, count_q, str(percent) + "%"])
+        table.append([d_name, dept_user_count, cout_exe_u, count_q, str(percent) + "%"])  # todo:为什么总有超长的百分数？？？导出的excel是正确的！
 
     return render_template('admin/report.html', form=form, table=table)

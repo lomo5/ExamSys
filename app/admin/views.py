@@ -245,9 +245,10 @@ def report():
                 cout_exe_u += 1
 
         if count_q != 0 and count_t != 0:
-            percent = round(count_t / count_q, 4) * 100  # 正确率。注意：这里乘了100
+            # todo:为什么总有超长的百分数？？？导出的excel是正确的！尝试先乘100，再round
+            percent = round((count_t / count_q) * 100, 2)  # 正确率。注意：这里乘了100
         else:
             percent = 0
-        table.append([d_name, dept_user_count, cout_exe_u, count_q, str(percent) + "%"])  # todo:为什么总有超长的百分数？？？导出的excel是正确的！
+        table.append([d_name, dept_user_count, cout_exe_u, count_q, str(percent) + "%"])
 
     return render_template('admin/report.html', form=form, table=table)

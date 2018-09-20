@@ -8,7 +8,7 @@ from . import home  # 导入blueprint
 from .forms import ExerciseBeginForm, ExerciseSingleForm, ExerciseTrueFalseForm, ExerciseMultiChoiceForm, \
     ExerciseFillForm, ExerciseAnswerForm, ExerciseNextQuestionForm
 from .. import db
-from ..models import Question, Exercise, QuestionType, Mistake, Subject, User
+from ..models import Question, Exercise, QuestionType, Mistake
 
 
 # [(qt.id, qt.type_name) for qt in QuestionType.query.order_by(QuestionType.id).all()]
@@ -21,10 +21,12 @@ def index():
     return render_template('home/index.html')
 
 
-# 刷题开始页
-@home.route('/beginexerc', methods=['GET', 'POST'])
+@home.route('/beginexerc/<collection>', methods=['GET', 'POST'])
 @login_required
-def beginexerc():
+def beginexerc(collection):
+    """刷题开始页，选择Subject和题型
+    :param collection:试题集来源，表示练习的试题集是练习（'exercise'）还是错题（'mistake'）
+    """
     form = ExerciseBeginForm()
     # 1、选科目；2、如果已经选择了科目并点击"开始"，如果验证通过，则转到答题页面，同时将subject存入session
     if form.validate_on_submit():
@@ -35,20 +37,24 @@ def beginexerc():
         session['exercise_id'] = exerc_id  # commit之后exerc才有了id
         q_type_id = int(form.question_type.data)
         session['question_type'] = q_type_id  # 保存题型，0表示所有题型
+        session['collection'] = collection  # 保存题库来源：练习/错题回顾
         session.pop('before_id', None)
         session.pop('u_answer', None)
 
         return redirect(url_for('home.exercises'))
-    return render_template('home/beginexerc.html', form=form)
+    return render_template('home/beginexerc.html', form=form, collection=collection)
 
 
-# 题目显示页
 @home.route('/exercises', methods=['GET', 'POST'])
 @login_required
 def exercises():
+    """题目显示页"""
+    if 'collection' not in session:  # 避免用户直接从地址栏跳转到练习或试题回顾页面的情况
+        return redirect(url_for('home.index'))
+    collection = session['collection']
     if 'subject_id' not in session or 'question_type' not in session:  # 如果session中没有subject_id，则返回选择科目页面
         flash('请先选择科目和题型！')
-        return redirect(url_for('home.beginexerc'))
+        return redirect(url_for('home.beginexerc', collection=collection))
     if 'exercise_id' not in session:
         exerc_id = new_exercise()
         session['exercise_id'] = exerc_id
@@ -58,7 +64,7 @@ def exercises():
     qtype = session['question_type']  # 取得当前问题类型，即在beginexerc页面中选择的题型。
     if sub_id == '' or qtype == '':
         flash('请先选择科目和题型！')
-        return redirect(url_for('home.beginexerc'))
+        return redirect(url_for('home.beginexerc', collection=collection))
 
     if 'before_id' in session:
         before_id = session['before_id']  # 上一题id。  新打开浏览器直接取会出错（不存在），应该先判断是否存在！！
@@ -169,11 +175,30 @@ def exercises():
             session['u_answer'] = u_answer
             return redirect(url_for('home.answer'))
 
-    """如果不是点击"提 交"（即前一题答对或现在是第一题），则生成试题并显示"""
-    if qtype != 0:
-        q_next = random_question(exerc, sub_id, qtype)
-    else:
-        q_next = random_question(exerc, sub_id)  # 生成一道随机题目
+    collection = session['collection']
+    """如果不是点击"提 交"（即前一题答对或现在是第一题），则生成试题并显示。
+    根据菜单选的是"练习"还是"错题回顾"来生成随机题目。    
+    """
+    if collection == 'mistake':  # 菜单选择的是"错题回顾"
+        if qtype != 0:
+            q_next = random_question(exerc, sub_id, qtype, revise=True)  # 生成一道指定题型的随机题目
+        else:
+            q_next = random_question(exerc, sub_id, revise=True)  # 生成一道随机题目
+    else:  # 菜单选的是"练习"
+        if qtype != 0:
+            q_next = random_question(exerc, sub_id, qtype)  # 生成一道指定题型的随机题目
+        else:
+            q_next = random_question(exerc, sub_id)  # 生成一道随机题目
+
+    if q_next is None:  # 如果是最后一道题,则清空session变量，返回科目选择页面
+        flash('恭喜！所有题目均已练习完毕！')
+        session.pop('exercise_id', None)
+        session.pop('subject_id', None)
+        session.pop('before_id', None)
+        session.pop('u_answer', None)
+        session.pop('question_type', None)
+        return redirect(url_for('home.beginexerc', collection=collection))
+
     q_next_qtype_name = q_next.question_type.type_name  # 题型名称
     # 判断题目类型,根据题型创建不同类型的form
     if q_next_qtype_name == '单选题':
@@ -189,15 +214,6 @@ def exercises():
 
     # if form.submit.label != ExerciseNextQuestionForm.submit.label:  # 不是"下一题"的那个form，而是点击了"提交"或从其他页面转过来的。
     #     form = ExerciseNextQuestionForm()
-
-    if q_next is None:  # 如果是最后一道题,则清空session变量，返回科目选择页面
-        flash('恭喜！本专业下所有题目均已练习完毕！')
-        session.pop('exercise_id', None)
-        session.pop('subject_id', None)
-        session.pop('before_id', None)
-        session.pop('u_answer', None)
-        session.pop('question_type', None)
-        return redirect(url_for('home.exercise'))
 
     q_context = q_next.question  # 题干
     # exerc.question_list += str(q_next.id) 去掉，在点击submit提交后再插入exercise表
@@ -227,10 +243,10 @@ def exercises():
                            question_type=q_next.question_type.type_name)
 
 
-# 练习答题结果反馈页
 @home.route('/answer', methods=['GET', 'POST'])
 @login_required
 def answer():
+    """练习答题结果反馈页"""
     form = ExerciseNextQuestionForm()
     if form.is_submitted():
         return redirect(url_for('home.exercises'))
@@ -268,17 +284,17 @@ def answer():
                            answers=answers, options=options)
 
 
-# 个人统计信息
 @home.route('/statistic', methods=['GET', 'POST'])
 @login_required
 def statistic():
+    """个人统计信息"""
     # 获取页面表格参数
     table = []  # 页面表格内容.行：统计周期（今天、本周、本月）、做题数量、错题数、正确率
     before = (datetime.utcnow() + timedelta(days=-1))  # 注 意：系统中时间均采用UTC时间！！！
     duration = '今天'
     q_count = 0
     r_count = 0
-    for exe in Exercise.query.filter(Exercise.user_id==current_user.id, Exercise.begin_time>before).all():
+    for exe in Exercise.query.filter(Exercise.user_id == current_user.id, Exercise.begin_time > before).all():
         q_count += len(exe.result_list)
         r_count += exe.result_list.count('T')
     if q_count != 0 and r_count != 0:
@@ -291,7 +307,7 @@ def statistic():
     before = (datetime.utcnow() + timedelta(days=-7))  # 注 意：系统中时间均采用UTC时间！！！
     q_count = 0
     r_count = 0
-    for exe in Exercise.query.filter(Exercise.user_id==current_user.id, Exercise.begin_time>before).all():
+    for exe in Exercise.query.filter(Exercise.user_id == current_user.id, Exercise.begin_time > before).all():
         q_count += len(exe.result_list)
         r_count += exe.result_list.count('T')
     if q_count != 0 and r_count != 0:
@@ -304,7 +320,7 @@ def statistic():
     before = (datetime.utcnow() + timedelta(days=-30))  # 注 意：系统中时间均采用UTC时间！！！
     q_count = 0
     r_count = 0
-    for exe in Exercise.query.filter(Exercise.user_id==current_user.id, Exercise.begin_time>before).all():
+    for exe in Exercise.query.filter(Exercise.user_id == current_user.id, Exercise.begin_time > before).all():
         q_count += len(exe.result_list)
         r_count += exe.result_list.count('T')
     if q_count != 0 and r_count != 0:
@@ -320,6 +336,8 @@ def statistic():
 @home.route('/mistakes', methods=['GET', 'POST'])
 @login_required
 def mistakes():
+    exe = Exercise()
+    print(random_question(exe, ))
     return render_template('home/examine.html')
 
 
@@ -342,26 +360,38 @@ def info():
 # --------------------------------------------------------------------------
 
 # 生成随机题目函数
-def random_question(exerc, s_id, qtypte_id=None):
+def random_question(exerc, sub_id, qtypte_id=None, revise=False):
     """生成随机题目
-    :param exerc：Exercise对象
-    :param s_id：科目（subject）的id)
+    :param exerc：Exercise对象，是必须的参数
+    :param sub_id：科目（subject）的id),是必须的参数
     :param qtypte_id: 题型id，默认为None表示不限题型
+    :param revise: 表示是否是错题回顾模式。False表示非错题回顾，则从题库中随机选一个指定科目、指定题型、且本次exercise没做过的题；为True表示是错题回顾模式，则从错题中随机找（优先没做对过的）
     """
     # 已答问题id组成的","分隔的字串
     q_str = exerc.question_list
     if q_str != '':
-        q_over_list = exerc.question_list.split(',')  # 已经练过的问题的id的列表
+        q_id_over_list = exerc.question_list.split(',')  # 已经练过的问题的id的列表
     else:
-        q_over_list = []
-    if qtypte_id is None:
-        all_question = Question.query.filter_by(subject_id=int(s_id)).all()
-    else:
-        all_question = Question.query.filter(Question.subject_id == int(s_id)).filter(
-            Question.qtype_id == int(qtypte_id)).all()
+        q_id_over_list = []
 
-    if len(q_over_list) > 0:  # 如果有已经做过的题，则需要从备选题列表中删去
-        for q in q_over_list:  # 把已经联系过的题目去掉
+    if revise:  # todo: 这里不对，需要输出的all_question是所有question对象的list
+        if qtypte_id is None:
+            # 未指定题型，则取得当前用户指定科目下的所有的错题
+            all_question = Question.query.filter_by(subject_id=int(sub_id)).join(Mistake, Mistake.question_id == Question.id).filter(
+                Mistake.user_id == current_user.id).distinct().all()
+        else:  # 如果指定了题型，则取得当前用户指定科目下的指定题型的错题
+            all_question = Question.query.filter_by(subject_id=int(sub_id)).join(Mistake, Mistake.question_id == Question.id).filter(
+                Mistake.user_id == current_user.id).distinct().filter(
+                Question.qtype_id == int(qtypte_id)).all()
+    else:
+        if qtypte_id is None:
+            all_question = Question.query.filter_by(subject_id=int(sub_id)).all()
+        else:
+            all_question = Question.query.filter(Question.subject_id == int(sub_id)).filter(
+                Question.qtype_id == int(qtypte_id)).all()
+
+    if len(q_id_over_list) > 0:  # 如果有已经做过的题，则需要从备选题列表中删去
+        for q in q_id_over_list:  # 把已经联系过的题目去掉
             que = Question.query.filter(Question.id == q).first()
             if que in all_question:
                 all_question.remove(que)
@@ -424,7 +454,7 @@ def update_exercises(before_id, ex_id, correct):
     :param correct,是否正确,boolean
     """
 
-    ex = Exercise.query.filter(Exercise.id==ex_id).first()
+    ex = Exercise.query.filter(Exercise.id == ex_id).first()
     q_list = ex.question_list.split(',')
     if before_id not in q_list:  # 入已经做过相同的题则不计入Exercise
         if ex.result_list is None or ex.question_list is None or ex.result_list == '' or ex.question_list == '':
@@ -444,4 +474,3 @@ def update_exercises(before_id, ex_id, correct):
         ex.question_list = q_list_str
         db.session.add(ex)
         db.session.commit()
-

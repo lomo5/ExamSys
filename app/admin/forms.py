@@ -1,9 +1,9 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, SelectField
+from wtforms import StringField, PasswordField, SubmitField, SelectField, BooleanField, SelectMultipleField
 from wtforms import ValidationError
 from wtforms.validators import DataRequired, Length, Email, EqualTo
 
-from ..models import User, Department, Role
+from ..models import User, Department, Role, Subject
 
 
 class AddUserForm(FlaskForm):
@@ -136,3 +136,48 @@ class AdminReport(FlaskForm):
     period = SelectField('统计周期', validators=[DataRequired()], choices=[('D', '今天'), ('W', '本周'), ('M', '本月')])
     unit = SelectField('统计单位', validators=[DataRequired()], choices=[('department', '部门'), ('individual', '个人')])
     submit = SubmitField('生成报表')
+
+
+class CreatePaper(FlaskForm):
+    """创建试卷"""
+    title = StringField('试卷名称', validators=[DataRequired()])
+    subject = SelectField('选择专业',
+                          coerce=int)  # choices在view中填充；参数”coerce”参数来强制转换选择项值的类型（默认是string，由于id实际上是int类型，因此会导致提交时始终验证不过Not a valid choice
+    question_type = SelectField('选择题型', coerce=int)  # , validators=[DataRequired])
+    single = BooleanField('单选题', default=True)
+    multi = BooleanField('多选题', default=False)
+    tf = BooleanField('判断题', default=False)
+    fill = BooleanField('填空题', default=False)
+    saq = BooleanField('简答题', default=False)
+    single_count = StringField('数量', default=0, coerce=int)
+    multi_count = StringField('数量', default=0, coerce=int)
+    tf_count = StringField('数量', default=0, coerce=int)
+    fill_count = StringField('数量', default=0, coerce=int)
+    saq_count = StringField('数量', default=0, coerce=int)
+    single_score = StringField('每题分值', default=0, coerce=int)
+    multi_score = StringField('每题分值', default=0, coerce=int)
+    tf_score = StringField('每题分值', default=0, coerce=int)
+    fill_score = StringField('每题分值', default=0, coerce=int)
+    saq_score = StringField('每题分值', default=0, coerce=int)
+    # total_score = StringField('总分', validators=[DataRequired()])
+    departments = SelectMultipleField('部门', validators=[DataRequired()])
+    submit = SubmitField('生成试卷')
+
+    # 在初始化Form实例时指定selectField的choices内容。参考：https://blog.csdn.net/agmcs/article/details/45308431
+    def __init__(self, *args, **kwargs):
+        super(CreatePaper, self).__init__(*args, **kwargs)
+        # self.subject.choices = [(subject.id, subject.subject_name) for subject in
+        #                         Subject.query.order_by(Subject.subject_name).all()]
+        depart_list = list()
+        depart_list.append((0, '所有部门'))  # 表示不限定题型，随机选
+        tmp_dpart_list = [(depart.id, depart.department_name) for depart in
+                      Department.query.order_by(Department.department_name).all()]
+        depart_list.append(tmp_dpart_list)
+        self.departments.choices = depart_list
+
+
+class ReleasePaper(FlaskForm):
+    """发布试卷"""
+    submit = SubmitField('发布试卷')
+
+

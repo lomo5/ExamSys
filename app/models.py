@@ -194,6 +194,8 @@ class Paper(db.Model):
     __tablename__ = 'papers'
     id = db.Column(db.Integer, primary_key=True, unique=True)
     add_time = db.Column(db.DateTime, default=datetime.utcnow)  # 添加时间
+    release_time = db.Column(db.DateTime, default=None, nullable=True)  # 试卷发布时间
+    title = db.Column(db.String(200), nullable=False, unique=True)  # 试卷标题
     # 关系、外键：
     create_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # 外键：创建用户id
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'))  # 外键：科目

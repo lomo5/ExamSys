@@ -9,7 +9,7 @@
         <p>请使用工号、密码登录。</p>
         <p>如果忘记密码，请与管理员联系。</p>
         {% if current_user.is_authenticated %}
-            <p><a class="btn btn-primary btn-lg" href="{{ url_for('home.beginexerc') }}" role="button" >开始练习</a></p>
+            <p><a class="btn btn-primary btn-lg" href="{{ url_for('home.beginexerc',collection='exercise') }}" role="button" >开始练习</a></p>
         {% else %}
             <p><a class="btn btn-primary btn-lg" href="{{ url_for('auth.login') }}" role="button">登 录</a></p>
         {% endif %}
